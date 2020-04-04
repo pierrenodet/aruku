@@ -7,6 +7,9 @@ jdk: oraclejdk8
 scala:
   - 2.12.10
 
+env:
+  - NODE_VERSION="v12.16.1"
+
 sudo: required
 
 stages:
@@ -43,3 +46,5 @@ before_cache:
 
 before_install:
   - git fetch --tags
+  - nvm install $NODE_VERSION
+
