@@ -10,7 +10,7 @@ module.exports = {
     navbar: {
       title: '歩く aruku',
       links: [
-        { to: "api/index.html", label: 'API', position: 'right' },
+        { to: "api", label: 'API', position: 'right' },
         { to: 'docs/overview', label: 'Documentation', position: 'right' },
         {
           href: 'https://github.com/pierrenodet/aruku',
