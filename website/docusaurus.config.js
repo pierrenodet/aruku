@@ -1,16 +1,18 @@
+const baseUrl = '/aruku/'
+
 module.exports = {
   title: '歩く aruku',
   tagline: 'A Random Walk Engine for Apache Spark',
   url: 'https://pierrenodet.github.io/aruku',
-  baseUrl: '/aruku/',
-  favicon: 'img/favicon.ico',
+  baseUrl: baseUrl,
+  favicon: `${baseUrl}img/favicon.ico`,
   organizationName: 'pierrenodet',
   projectName: 'aruku',
   themeConfig: {
     navbar: {
       title: '歩く aruku',
       links: [
-        { to: "api/index.html", label: 'API', position: 'right' },
+        { to: `${baseUrl}api/index.html`, label: 'API', position: 'right' },
         { to: 'docs/overview', label: 'Documentation', position: 'right' },
         {
           href: 'https://github.com/pierrenodet/aruku',
