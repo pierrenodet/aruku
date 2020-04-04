@@ -1,0 +1,63 @@
+# Project specific
+data/
+checkpoint/
+
+# JVM specific
+*.class
+*.log
+
+# sbt specific
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+project/hydra.sbt
+
+# Scala-IDE specific
+.scala_dependencies
+.cache
+.classpath
+.project
+.worksheet/
+bin/
+.settings/
+
+# VSCode specific
+.vscode/
+
+# OS X
+.DS_Store
+
+# Ctags
+.tags
+
+# ENSIME
+.ensime
+.ensime_cache/
+
+# IntelliJ
+.idea/
+
+# Mill
+out/
+
+# Bloop/Metals
+.bloop/
+.metals/
+metals.sbt
+
+website/translated_docs
+website/build/
+website/yarn.lock
+website/node_modules
+website/i18n/*
+!website/i18n/en.json
+website/static/api
+.docusaurus
+.cache-loader
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
