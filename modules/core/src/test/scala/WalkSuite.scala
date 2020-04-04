@@ -34,27 +34,6 @@ class WalkSuite extends FunSuite {
 
   test("can generate paths") {
 
-    val sc = SparkContext.getOrCreate(
-      new SparkConf().setMaster("local[*]").setAppName("test").set("spark.graphx.pregel.checkpointInterval", "1")
-    )
-    sc.setCheckpointDir("checkpoint")
-
-    val numWalkers = 150000
-    val walkLength = 80
-
-    val numVertices = 10000
-
-    val graph: Graph[Long, Int] =
-      GraphGenerators
-        .logNormalGraph(sc, numVertices = numVertices)
-
-    val paths =
-      graph.randomWalk(edge => edge.attr.toDouble)(Node2Vec.config(numWalkers), Node2Vec.transition(0.5, 2, walkLength))
-
-    paths.take(10).foreach { case (k, v) => println(k, v.mkString(",")) }
-    assert(paths.count() == numWalkers)
-    assert(paths.collect().map { case (_, path) => path.size }.contains(walkLength))
-
     //Start SparkContext
     val sc = SparkContext.getOrCreate(
       new SparkConf()
@@ -78,11 +57,16 @@ class WalkSuite extends FunSuite {
 
     //Execute Random Walk
     val paths =
-      graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)
-    (Node2Vec.config(numWalkers), Node2Vec.transition(p, q, walkLength))
+      graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
+        Node2Vec.config(numWalkers),
+        Node2Vec.transition(p, q, walkLength)
+      )
 
     //Print 10 first Random Walks
-    paths.take(10).foreach { case (walkerId, path) => println(walkerId, path.mkString(",")) }
+    paths.take(10).foreach { case (k, v) => println(k, v.mkString(",")) }
+    assert(paths.count() == numWalkers)
+    assert(paths.collect().map { case (_, path) => path.size }.contains(walkLength))
+
   }
 
 }
