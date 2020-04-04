@@ -5,7 +5,7 @@ title: Overview
 
 ## What's aruku ?
 
-aruku is a random walk engine for Apache Spark. It's helps you program and model you random walk easily and let's an distributed, fault tolerant and optimized engine take care of running it. 
+aruku is a random walk engine for Apache Spark. It's helps you program and model you random walk easily and let's a distributed, fault tolerant and optimized engine take care of running it. 
 
 ## How do I use it ?
 
