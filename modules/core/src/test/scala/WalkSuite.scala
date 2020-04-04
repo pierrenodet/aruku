@@ -44,14 +44,14 @@ class WalkSuite extends FunSuite {
     sc.setCheckpointDir("checkpoint")
 
     //Generate Graph
-    val numVertices = 150000
+    val numVertices = 1000
     val graph: Graph[Long, Int] =
       GraphGenerators
         .logNormalGraph(sc, numVertices = numVertices)
 
     //Node2Vec Configuration
-    val numWalkers = 150000
-    val walkLength = 80
+    val numWalkers = 5000
+    val walkLength = 10
     val p          = 0.5
     val q          = 2
 
