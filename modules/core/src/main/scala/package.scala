@@ -15,5 +15,5 @@
  */
 
 package object aruku {
-    object implicits extends ToWalkOps
+  object implicits extends ToWalkOps
 }

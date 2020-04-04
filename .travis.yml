@@ -24,7 +24,7 @@ jobs:
     - stage: test
       script: sbt coverage test coverageReport && bash <(curl -s https://codecov.io/bash)
     - stage: release
-      script: sbt ci-release
+      script: sbt ci-release && sbt docs/docusaurusPublishGhpages
 
 cache:
   directories:

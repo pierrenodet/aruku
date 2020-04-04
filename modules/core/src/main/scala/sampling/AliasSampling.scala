@@ -36,8 +36,8 @@ object AliasSampling {
 
     val copiedRawProbabilities = MutableList[Double](rawProbabilities: _*)
 
-    val probabilities  = new Array[Double](copiedRawProbabilities.size)
-    val aliases = new Array[Int](copiedRawProbabilities.size)
+    val probabilities = new Array[Double](copiedRawProbabilities.size)
+    val aliases       = new Array[Int](copiedRawProbabilities.size)
 
     val small, large = new Queue[Int]
 
@@ -46,7 +46,7 @@ object AliasSampling {
     for (p <- probabilities.indices)
       if (probabilities(p) >= average) large += p else small += p
 
-      while (small.size != 0 && large.size != 0) {
+    while (small.size != 0 && large.size != 0) {
       val less = small.dequeue
       val more = large.dequeue
 
