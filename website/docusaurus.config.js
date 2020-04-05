@@ -3,19 +3,20 @@ module.exports = {
   tagline: 'A Random Walk Engine for Apache Spark',
   url: 'https://pierrenodet.github.io/aruku',
   baseUrl: '/aruku/',
-  favicon: '/img/favicon.ico',
+  favicon: 'img/favicon.ico',
   organizationName: 'pierrenodet',
   projectName: 'aruku',
   themeConfig: {
     navbar: {
       title: '歩く aruku',
       links: [
-        { href: 'api', label: 'API', position: 'right' },
+        { href: '/aruku/api/index.html', label: 'API', position: 'right', target: '_parent' },
         { to: 'docs/overview', label: 'Documentation', position: 'right' },
         {
           href: 'https://github.com/pierrenodet/aruku',
           label: 'GitHub',
           position: 'right',
+          target: '_self'
         },
       ],
     },

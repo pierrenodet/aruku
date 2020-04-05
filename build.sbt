@@ -53,8 +53,8 @@ lazy val aruku = project
   .enablePlugins(ScalaUnidocPlugin)
   .settings(commonSettings)
   .settings(publish / skip := true)
-  .dependsOn(core, mllib)
-  .aggregate(core, mllib)
+  .dependsOn(core)
+  .aggregate(core)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -73,7 +73,7 @@ lazy val core = project
 
 lazy val docs = project
   .in(file("modules/aruku-docs"))
-  .dependsOn(core, mllib)
+  .dependsOn(core)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
   .settings(commonSettings)
   .settings(
@@ -81,7 +81,7 @@ lazy val docs = project
     skip in publish := true,
     mdocVariables := Map("VERSION" -> version.value.takeWhile(_ != '+')),
     mdocIn := new File("modules/docs"),
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(core, mllib),
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(core),
     target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
     cleanFiles += (target in (ScalaUnidoc, unidoc)).value,
     docusaurusCreateSite := docusaurusCreateSite.dependsOn(unidoc in Compile).value,
