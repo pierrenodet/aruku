@@ -1,7 +1,7 @@
 ---
 id: walks
 title: "Provided Walks"
-------
+---
 
 As of now three random walks are provided with aruku
 

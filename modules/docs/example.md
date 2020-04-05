@@ -1,7 +1,7 @@
 ---
 id: example
 title: "Example"
-------
+---
 
 Let's generate a graph with GraphX and run node2vec on it !
 
