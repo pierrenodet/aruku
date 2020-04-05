@@ -62,7 +62,7 @@ lazy val core = project
   .settings(commonSettings)
   .settings(
     name := "aruku-core",
-    description := "",
+    description := "A Random Walk Engine for Apache Spark",
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core"   % sparkVersion      % Provided,
       "org.apache.spark" %% "spark-graphx" % sparkVersion      % Provided,
