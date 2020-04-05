@@ -71,22 +71,6 @@ lazy val core = project
     )
   )
 
-lazy val mllib = project
-  .in(file("modules/mllib"))
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(commonSettings)
-  .dependsOn(core)
-  .settings(
-    name := "aruku-mllib",
-    description := "",
-    libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-sql"   % sparkVersion      % Provided,
-      "org.apache.spark" %% "spark-mllib" % sparkVersion      % Provided,
-      "org.scalacheck"   %% "scalacheck"  % scalaCheckVersion % Test,
-      "org.scalatest"    %% "scalatest"   % scalatestVersion  % Test
-    )
-  )
-
 lazy val docs = project
   .in(file("modules/aruku-docs"))
   .dependsOn(core, mllib)
