@@ -22,9 +22,11 @@ import org.apache.spark.graphx.{ Edge, VertexId }
 
 case object PersonalizedPageRank {
 
-  def config(numWalkers: Long) =
+  def config(numWalkers: Long, numEpochs: Int = 1, parallelism:Int=1) =
     WalkerConfig.constant(
       numWalkers,
+      numEpochs,
+      parallelism,
       (current: VertexId) => PersonalizedPageRank,
       AtRandom(1.0)
     )

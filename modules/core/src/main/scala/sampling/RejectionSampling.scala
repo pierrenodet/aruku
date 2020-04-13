@@ -25,7 +25,8 @@ import aruku._
 sealed case class RejectionSampling[T, M] private[aruku] (
   dynamic: (VertexId, Edge[Double], Option[M]) => Double,
   upperBound: (VertexId, Array[Edge[Double]]) => Double,
-  lowerBound: (VertexId, Array[Edge[Double]]) => Double
+  lowerBound: (VertexId, Array[Edge[Double]]) => Double,
+  random: Random
 ) {
 
   def next(current: VertexId, neighbors: Array[Edge[Double]], message: Option[M], alias: AliasSampling): Int = {
@@ -40,7 +41,7 @@ sealed case class RejectionSampling[T, M] private[aruku] (
 
     while (!hit) {
 
-      dart = alias.random.nextDouble() * ub
+      dart = random.nextDouble() * ub
       nidx = alias.next
 
       if (dart < lb || dart < dynamic(current, neighbors(nidx), message)) {
@@ -57,13 +58,13 @@ sealed case class RejectionSampling[T, M] private[aruku] (
 
 object RejectionSampling {
 
-  def fromWalkerTransition[T, M](walker: Walker[T], transition: Transition[T, M]) = {
+  def fromWalkerTransition[T, M](walker: Walker[T], transition: Transition[T, M], random: Random = new Random) = {
 
     val dynamic    = Function.uncurried(transition.dynamic.curried.apply(walker))
     val upperBound = transition.upperBound
     val lowerBound = transition.lowerBound
 
-    new RejectionSampling(dynamic, upperBound, lowerBound)
+    new RejectionSampling(dynamic, upperBound, lowerBound, random)
 
   }
 

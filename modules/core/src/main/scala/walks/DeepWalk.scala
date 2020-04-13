@@ -21,9 +21,11 @@ import org.apache.spark.graphx.{ Edge, VertexId }
 
 case object DeepWalk {
 
-  def config(numWalkers: Long) =
+  def config(numWalkers: Long, numEpochs: Int = 1, parallelism: Int = 1) =
     WalkerConfig.constant(
       numWalkers,
+      numEpochs,
+      parallelism,
       (current: VertexId) => DeepWalk,
       AtRandom(1.0)
     )

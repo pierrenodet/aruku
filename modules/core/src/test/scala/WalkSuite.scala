@@ -32,7 +32,7 @@ import aruku.implicits._
 
 class WalkSuite extends FunSuite {
 
-  test("can generate paths") {
+  test("generate walks") {
 
     //Start SparkContext
     val sc = SparkContext.getOrCreate(
@@ -51,6 +51,7 @@ class WalkSuite extends FunSuite {
 
     //Node2Vec Configuration
     val numWalkers = 5000
+    val numEpochs = 2
     val walkLength = 10
     val p          = 0.5
     val q          = 2
@@ -58,14 +59,13 @@ class WalkSuite extends FunSuite {
     //Execute Random Walk
     val paths =
       graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
-        Node2Vec.config(numWalkers),
+        Node2Vec.config(numWalkers,numEpochs),
         Node2Vec.transition(p, q, walkLength)
       )
 
-    //Print 10 first Random Walks
-    paths.take(10).foreach { case (k, v) => println(k, v.mkString(",")) }
-    assert(paths.count() == numWalkers)
-    assert(paths.collect().map { case (_, path) => path.size }.contains(walkLength))
+    val sizes = paths.collect().map { case (_, path) => path.size }
+
+    assert(paths.count() == numWalkers && sizes.map(size => math.abs(size - walkLength)).sum < 0.01 * numWalkers)
 
   }
 

@@ -25,9 +25,11 @@ sealed case class Node2Vec private[aruku] (
 
 object Node2Vec {
 
-  def config(numWalkers: Long) =
+  def config(numWalkers: Long, numEpochs: Int = 1, parallelism:Int=1) =
     WalkerConfig.dynamic(
       numWalkers,
+      numEpochs,
+      parallelism,
       (current: VertexId) => Node2Vec(current),
       (walker: Walker[Node2Vec], current: VertexId, next: Edge[Double]) => Node2Vec(current),
       AtRandom(1.0)

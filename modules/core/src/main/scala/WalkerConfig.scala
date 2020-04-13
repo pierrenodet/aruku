@@ -19,28 +19,42 @@ package aruku
 import scala.util.Random
 import org.apache.spark.graphx.{ Edge, VertexId }
 
-sealed case class WalkerConfig[T] private[aruku] (
+final case class WalkerConfig[T] private[aruku] (
   numWalkers: Long,
+  numEpochs: Int,
+  parallelism: Int,
   init: VertexId => T,
   update: (Walker[T], VertexId, Edge[Double]) => T,
   start: StartingStrategy
 )
 
 sealed trait StartingStrategy
-case class AtRandom(probability: Double, random: Random = new Random) extends StartingStrategy
-case class FromVertices(vertices: Array[VertexId])                    extends StartingStrategy
+final case class AtRandom(probability: Double, random: Random = new Random) extends StartingStrategy
+final case class FromVertices(vertices: Array[VertexId])                    extends StartingStrategy
 
 object WalkerConfig {
   def dynamic[T](
     numWalkers: Long,
+    numEpochs: Int,
+    parallelism: Int,
     init: VertexId => T,
     update: (Walker[T], VertexId, Edge[Double]) => T,
     start: StartingStrategy
-  ) = new WalkerConfig[T](numWalkers, init, update, start)
+  ) = new WalkerConfig[T](numWalkers, numEpochs, parallelism, init, update, start)
 
   def constant[T](
     numWalkers: Long,
+    numEpochs: Int,
+    parallelism: Int,
     init: VertexId => T,
     start: StartingStrategy
-  ) = new WalkerConfig[T](numWalkers, init, (walker: Walker[T], _: VertexId, _: Edge[Double]) => walker.data, start)
+  ) =
+    new WalkerConfig[T](
+      numWalkers,
+      numEpochs,
+      parallelism,
+      init,
+      (walker: Walker[T], _: VertexId, _: Edge[Double]) => walker.data,
+      start
+    )
 }

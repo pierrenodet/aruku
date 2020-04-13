@@ -50,7 +50,7 @@ private[aruku] class RDDCheckpointer[T](checkpointInterval: Int, sc: SparkContex
    * @param newData  New Dataset created from previous Datasets in the lineage.
    */
   def update(newData: RDD[T]): Unit = {
-    newData.persist()
+    newData.persist(storageLevel)
     persistedQueue.enqueue(newData)
     // We try to maintain 2 Datasets in persistedQueue to support the semantics of this class:
     // Users should call [[update()]] when a new Dataset has been created,
