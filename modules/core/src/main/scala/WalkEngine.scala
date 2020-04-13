@@ -41,22 +41,24 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
     graph: RDD[(VertexId, Array[Edge[Double]])],
     transitionBC: Broadcast[Transition[T, M]]
   ): RDD[PartitionID] =
-    graph.partitionBy(partitioner).mapPartitionsWithIndex(
-      { (pid: PartitionID, iter: Iterator[(VertexId, Array[Edge[Double]])]) =>
-        val static = transitionBC.value.static
-        LocalGraphPartition.data ++= iter.map {
-          case (vid, data) => {
-            val components    = data.map(edge => static(vid, edge))
-            val sum           = components.sum
-            val probabilities = components.map(_ / sum)
-            val aliases       = AliasSampling.fromRawProbabilities(probabilities, random)
-            (vid, LocalData(data, aliases))
+    graph
+      .partitionBy(partitioner)
+      .mapPartitionsWithIndex(
+        { (pid: PartitionID, iter: Iterator[(VertexId, Array[Edge[Double]])]) =>
+          val static = transitionBC.value.static
+          LocalGraphPartition.data ++= iter.map {
+            case (vid, data) => {
+              val components    = data.map(edge => static(vid, edge))
+              val sum           = components.sum
+              val probabilities = components.map(_ / sum)
+              val aliases       = AliasSampling.fromRawProbabilities(probabilities, random)
+              (vid, LocalData(data, aliases))
+            }
           }
-        }
-        Iterator.empty
-      },
-      preservesPartitioning = true
-    )
+          Iterator.empty
+        },
+        preservesPartitioning = true
+      )
 
   private def initWalkers(
     vertices: RDD[VertexId],

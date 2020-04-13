@@ -25,7 +25,7 @@ sealed case class Node2Vec private[aruku] (
 
 object Node2Vec {
 
-  def config(numWalkers: Long, numEpochs: Int = 1, parallelism:Int=1) =
+  def config(numWalkers: Long, numEpochs: Int = 1, parallelism: Int = 1) =
     WalkerConfig.dynamic(
       numWalkers,
       numEpochs,
