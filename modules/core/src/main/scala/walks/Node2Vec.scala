@@ -26,19 +26,19 @@ sealed case class Node2Vec private[aruku] (
 object Node2Vec {
 
   def config(numWalkers: Long, numEpochs: Int = 1, parallelism: Int = 1) =
-    WalkerConfig.dynamic(
+    WalkerConfig.updating(
       numWalkers,
       numEpochs,
       parallelism,
       (current: VertexId) => Node2Vec(current),
-      (walker: Walker[Node2Vec], current: VertexId, next: Edge[Double]) => Node2Vec(current),
+      (_: Walker[Node2Vec], current: VertexId, _: Edge[Double]) => Node2Vec(current),
       AtRandom(1.0)
     )
 
   def transition(p: Double, q: Double, walkLength: Long) =
     Transition.secondOrder(
       (walker: Walker[Node2Vec], _: VertexId) => if (walker.step < walkLength) 1.0 else 0.0,
-      (vid: VertexId, edge: Edge[Double]) => edge.attr,
+      (_: VertexId, edge: Edge[Double]) => edge.attr,
       (walker: Walker[Node2Vec], _: VertexId, edges: Array[Edge[Double]]) => Some(edges.map(_.dstId)),
       (
         walker: Walker[Node2Vec],

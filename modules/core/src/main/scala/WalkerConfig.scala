@@ -33,7 +33,7 @@ final case class AtRandom(probability: Double, random: Random = new Random) exte
 final case class FromVertices(vertices: Array[VertexId])                    extends StartingStrategy
 
 object WalkerConfig {
-  def dynamic[T](
+  def updating[T](
     numWalkers: Long,
     numEpochs: Int,
     parallelism: Int,

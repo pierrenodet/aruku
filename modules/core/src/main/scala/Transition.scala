@@ -21,7 +21,7 @@ import org.apache.spark.graphx.{ Edge, VertexId }
 final case class Transition[T, M] private[aruku] (
   extension: (Walker[T], VertexId) => Double,
   static: (VertexId, Edge[Double]) => Double,
-  msg: (Walker[T], VertexId, Array[Edge[Double]]) => Option[M],
+  message: (Walker[T], VertexId, Array[Edge[Double]]) => Option[M],
   dynamic: (Walker[T], VertexId, Edge[Double], Option[M]) => Double,
   upperBound: (VertexId, Array[Edge[Double]]) => Double,
   lowerBound: (VertexId, Array[Edge[Double]]) => Double
@@ -68,14 +68,14 @@ object Transition {
   def secondOrder[T, M](
     extension: (Walker[T], VertexId) => Double,
     static: (VertexId, Edge[Double]) => Double,
-    msg: (Walker[T], VertexId, Array[Edge[Double]]) => Option[M],
+    message: (Walker[T], VertexId, Array[Edge[Double]]) => Option[M],
     dynamic: (Walker[T], VertexId, Edge[Double], Option[M]) => Double,
     upperBound: (VertexId, Array[Edge[Double]]) => Double,
     lowerBound: (VertexId, Array[Edge[Double]]) => Double
   ) = new Transition[T, M](
     extension,
     static,
-    msg,
+    message,
     dynamic,
     upperBound,
     lowerBound

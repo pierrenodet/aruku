@@ -27,6 +27,7 @@ import aruku.partition._
 import org.apache.spark.storage.StorageLevel
 import scala.concurrent._, duration._
 import java.util.concurrent.Executors
+import scala.reflect.ClassTag
 
 final case class WalkerState[T, M] private[aruku] (
   walker: Walker[T],
@@ -35,23 +36,24 @@ final case class WalkerState[T, M] private[aruku] (
   done: Boolean
 )
 
-final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, random: Random) {
+object RandomWalk {
 
-  private def initRoutingTable(
+  private def initRoutingTable[T, M](
     graph: RDD[(VertexId, Array[Edge[Double]])],
-    transitionBC: Broadcast[Transition[T, M]]
-  ): RDD[PartitionID] =
+    transitionBC: Broadcast[Transition[T, M]],
+    partitioner: Partitioner
+  ): RDD[Int] =
     graph
       .partitionBy(partitioner)
       .mapPartitionsWithIndex(
-        { (pid: PartitionID, iter: Iterator[(VertexId, Array[Edge[Double]])]) =>
+        { (pid: Int, iter: Iterator[(VertexId, Array[Edge[Double]])]) =>
           val static = transitionBC.value.static
           LocalGraphPartition.data ++= iter.map {
             case (vid, data) => {
               val components    = data.map(edge => static(vid, edge))
               val sum           = components.sum
               val probabilities = components.map(_ / sum)
-              val aliases       = AliasSampling.fromRawProbabilities(probabilities, random)
+              val aliases       = AliasSampling.fromRawProbabilities(probabilities)
               (vid, LocalData(data, aliases))
             }
           }
@@ -60,9 +62,10 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
         preservesPartitioning = true
       )
 
-  private def initWalkers(
+  private def initWalkers[T, M](
     vertices: RDD[VertexId],
-    walkerConfigBC: Broadcast[WalkerConfig[T]]
+    walkerConfigBC: Broadcast[WalkerConfig[T]],
+    partitioner: Partitioner
   ): Array[RDD[(VertexId, WalkerState[T, M])]] = {
 
     val sc = vertices.sparkContext
@@ -94,10 +97,10 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
     val actualWalkers: Long = walkers.count()
 
     val tooMuchWalkers =
-      if (actualWalkers < walkerConfigGlobal.numWalkers) {
+      if (actualWalkers < numWalkers) {
         var i   = 0
         var acc = Array(walkers)
-        while (i * actualWalkers < walkerConfigGlobal.numWalkers - actualWalkers) {
+        while (i * actualWalkers < numWalkers - actualWalkers) {
           acc = acc ++ Array(walkers)
           i += 1
         }
@@ -117,7 +120,7 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
       .cache()
 
     val batchedWalkers = {
-      for (i <- 0 to numEpochs) yield {
+      for (i <- 0 until numEpochs) yield {
         fullWalkersReady.filter {
           case (_, state) =>
             val numWalkers = walkerConfigBC.value.numWalkers
@@ -135,17 +138,17 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
     batchedWalkers
   }
 
-  private def transferWalkers(
-    routingTable: RDD[PartitionID],
+  private def transferWalkers[T, M](
+    routingTable: RDD[Int],
     walkers: RDD[(VertexId, WalkerState[T, M])]
   ): RDD[(VertexId, WalkerState[T, M])] =
     routingTable.zipPartitions {
-      walkers.partitionBy(partitioner)
+      walkers.partitionBy(routingTable.partitioner.get)
     } { (_, walker) =>
       walker
     }
 
-  private def walk(
+  private def walk[T, M](
     walkers: RDD[(VertexId, WalkerState[T, M])],
     walkerConfigBC: Broadcast[WalkerConfig[T]],
     transitionBC: Broadcast[Transition[T, M]]
@@ -154,8 +157,6 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
       { iter =>
         val update     = walkerConfigBC.value.update
         val transition = transitionBC.value
-        val extension  = transition.extension
-        val msg        = transition.msg
 
         iter.map {
           case (ivid, istate) =>
@@ -163,7 +164,7 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
             var walker      = istate.walker
             var path        = istate.path
             var message     = istate.message
-            var done        = istate.done || !(random.nextDouble() < extension(walker, vid))
+            var done        = istate.done || !(Random.nextDouble() < transition.extension(walker, vid))
             var doneLocally = false
 
             while (!done && !doneLocally) {
@@ -178,7 +179,7 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
                   message = None
                   done = true
                 case Some(LocalData(neighbors, alias)) =>
-                  val rejection = RejectionSampling.fromWalkerTransition[T, M](walker, transition, random)
+                  val rejection = RejectionSampling.fromWalkerTransition[T, M](walker, transition)
                   val ne        = neighbors(rejection.next(vid, neighbors, message, alias))
                   val nvid      = ne.dstId
                   walker = walker
@@ -187,10 +188,10 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
                       data = update(walker, vid, ne)
                     )
                   path = path ++ Array(vid)
-                  message = msg(walker, vid, neighbors)
+                  message = transition.message(walker, vid, neighbors)
                   doneLocally = !LocalGraphPartition.data.contains(nvid)
                   vid = nvid
-                  done = !(random.nextDouble() < extension(walker, vid))
+                  done = !(Random.nextDouble() < transition.extension(walker, vid))
               }
             }
             (vid, WalkerState(walker, path, message, done))
@@ -199,26 +200,35 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
       preservesPartitioning = false
     )
 
-  def randomWalk(
-    graph: RDD[(VertexId, Array[Edge[Double]])],
+  def run[T, M](
+    edgeDirection: EdgeDirection = EdgeDirection.Out
+  )(
+    graph: Graph[_, Double],
     walkerConfig: WalkerConfig[T],
     transition: Transition[T, M]
   ): RDD[(Long, Array[VertexId])] = {
 
-    val sc = graph.sparkContext
+    val sc = graph.vertices.sparkContext
+
+    val partitioner = graph.vertices.partitioner.getOrElse(new HashPartitioner(graph.vertices.partitions.size))
+
+    val flatten = graph.collectEdges(edgeDirection)
 
     val transitionBC   = sc.broadcast(transition)
     val walkerConfigBC = sc.broadcast(walkerConfig)
 
     implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(walkerConfig.parallelism))
 
-    var walkers = initWalkers(graph.keys, walkerConfigBC)
+    var walkers: Array[RDD[(VertexId, WalkerState[T, M])]] = initWalkers(flatten.keys, walkerConfigBC, partitioner)
 
-    val routingTable = initRoutingTable(graph, transitionBC).cache()
+    val routingTable = initRoutingTable(flatten, transitionBC, partitioner).cache()
     routingTable.count()
 
     val checkpointInterval = sc.getConf
       .getInt("spark.graphx.pregel.checkpointInterval", -1)
+
+    flatten.unpersist()
+    graph.unpersist()
 
     val accFutureFullCompleteWalkers = for (walker <- walkers) yield Future {
 
@@ -301,18 +311,5 @@ final case class WalkEngine[T, M] private[aruku] (partitioner: Partitioner, rand
 
     res
   }
-
-}
-
-object WalkEngine {
-
-  def fromNumPartitions[T, M](numPartions: Int) =
-    new WalkEngine[T, M](new HashPartitioner(numPartions), new Random)
-
-  def fromPartitioner[T, M](partitioner: Partitioner) =
-    new WalkEngine[T, M](partitioner, new Random)
-
-  def fromPartitioner[T, M](partitioner: Partitioner, random: Random) =
-    new WalkEngine[T, M](partitioner, random)
 
 }

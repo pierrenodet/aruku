@@ -39,6 +39,8 @@ object WalkerConfig {
 
   def constant[T](
     numWalkers: Long,
+    numEpochs: Int,
+    parallelism: Int,
     init: VertexId => T,
     start: StartingStrategy
   )
@@ -51,8 +53,10 @@ Or dynamic if we need to update the data of the walker at every step.
 ```scala title="modules/aruku/WalkerConfig.scala"
 object WalkerConfig {
 
-  def dynamic[T](
+  def updating[T](
     numWalkers: Long,
+    numEpochs: Int,
+    parallelism: Int,
     init: VertexId => T,
     update: (Walker[T], VertexId, Edge[Double]) => T,
     start: StartingStrategy

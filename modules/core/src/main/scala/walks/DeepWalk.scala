@@ -26,14 +26,14 @@ case object DeepWalk {
       numWalkers,
       numEpochs,
       parallelism,
-      (current: VertexId) => DeepWalk,
+      (_: VertexId) => DeepWalk,
       AtRandom(1.0)
     )
 
   def transition(walkLength: Long) =
     Transition.static(
       (walker: Walker[DeepWalk.type], _: VertexId) => if (walker.step < walkLength) 1.0 else 0.0,
-      (vid: VertexId, edge: Edge[Double]) => edge.attr
+      (_: VertexId, edge: Edge[Double]) => edge.attr
     )
 
 }

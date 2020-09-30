@@ -27,14 +27,14 @@ case object PersonalizedPageRank {
       numWalkers,
       numEpochs,
       parallelism,
-      (current: VertexId) => PersonalizedPageRank,
+      (_: VertexId) => PersonalizedPageRank,
       AtRandom(1.0)
     )
 
   def transition(pi: Double) =
     Transition.static(
-      (walker: Walker[PersonalizedPageRank.type], _: VertexId) => pi,
-      (vid: VertexId, edge: Edge[Double]) => edge.attr
+      (_: Walker[PersonalizedPageRank.type], _: VertexId) => pi,
+      (_: VertexId, edge: Edge[Double]) => edge.attr
     )
 
 }

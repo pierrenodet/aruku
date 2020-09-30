@@ -1,7 +1,7 @@
 lazy val sparkVersion      = "2.4.5"
 lazy val scalaCheckVersion = "1.14.0"
 lazy val scalatestVersion  = "3.0.8"
-lazy val scala211Version   = "2.11.12"
+lazy val scala211Version   = "2.11.8"
 lazy val scala212Version   = "2.12.10"
 
 lazy val commonSettings = Seq(
@@ -44,7 +44,15 @@ lazy val commonSettings = Seq(
     (baseDirectory in LocalRootProject).value.getAbsolutePath,
     "-doc-source-url",
     "https://github.com/pierrenodet/aruku/blob/v" + version.value + "€{FILE_PATH}.scala"
-  )
+  ),
+  fork.in(Test, run) := true,
+  parallelExecution.in(Test) := false,
+  assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
+  test in assembly := {},
+  assemblyExcludedJars in assembly := { 
+  val cp = (fullClasspath in assembly).value
+  cp filter {k => k.data.getName.contains("breeze")||k.data.getName.contains("java8")||k.data.getName.contains("math3")||k.data.getName.contains("netty")||k.data.getName.contains("netlib")}
+}
 )
 
 lazy val aruku = project
@@ -53,8 +61,8 @@ lazy val aruku = project
   .enablePlugins(ScalaUnidocPlugin)
   .settings(commonSettings)
   .settings(publish / skip := true)
-  .dependsOn(core)
-  .aggregate(core)
+  .dependsOn(core,embedding)
+  .aggregate(core,embedding)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -71,9 +79,26 @@ lazy val core = project
     )
   )
 
+lazy val glintWord2Vec = RootProject(uri("https://github.com/MGabr/glint-word2vec.git"))
+
+lazy val embedding = project
+  .in(file("modules/embedding"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .dependsOn(core,glintWord2Vec)
+  .settings(
+    name := "aruku-embedding",
+    description := "Node and Edge Embeddings",
+    libraryDependencies ++= Seq(
+      "org.apache.spark" %% "spark-mllib" % sparkVersion      % Provided,
+      "org.scalacheck"   %% "scalacheck"   % scalaCheckVersion % Test,
+      "org.scalatest"    %% "scalatest"    % scalatestVersion  % Test
+    )
+  )
+
 lazy val docs = project
   .in(file("modules/aruku-docs"))
-  .dependsOn(core)
+  .dependsOn(core,embedding)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
   .settings(commonSettings)
   .settings(

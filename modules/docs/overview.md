@@ -20,7 +20,7 @@ val walkLength = 80
 val p          = 0.5
 val q          = 2
 
-graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)
+graph.randomWalk(edge => edge.attr.toDouble)
     (Node2Vec.config(150000), Node2Vec.transition(0.5, 2, 80))
 ```
 
@@ -32,4 +32,4 @@ libraryDependencies += "com.github.pierrenodet" %% "aruku-core" % "@VERSION@"
 
 ## Acknowledgement
 
-This library is inspired by KnightKing [[engine](#https://github.com/KnightKingWalk/KnightKing)] and the [[talk](#https://www.youtube.com/watch?v=lyVZNZZUdOk&t=1473s)] of Min Shen at Spark Summit 2017.
+This library is inspired by KnightKing [[engine](https://github.com/KnightKingWalk/KnightKing)] and the [[talk](https://www.youtube.com/watch?v=lyVZNZZUdOk&t=1473s)] of Min Shen at Spark Summit 2017.

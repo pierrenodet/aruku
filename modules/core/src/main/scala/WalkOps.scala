@@ -20,16 +20,19 @@ import scala.reflect.ClassTag
 import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.HashPartitioner
+import scala.util.Random
 
 class WalkOps[VD: ClassTag, ED: ClassTag](graph: Graph[VD, ED]) extends Serializable {
 
   def randomWalk[T, M](preprocess: Edge[ED] => Double, edgeDirection: EdgeDirection = EdgeDirection.Out)(
     walkerConfig: WalkerConfig[T],
     transition: Transition[T, M]
-  ): RDD[(VertexId, Array[VertexId])] =
-    WalkEngine
-      .fromPartitioner(graph.vertices.partitioner.getOrElse(new HashPartitioner(graph.vertices.partitions.size)))
-      .randomWalk(graph.mapEdges(edge => preprocess(edge)).collectEdges(edgeDirection), walkerConfig, transition)
+  ): RDD[(Long, Array[VertexId])] =
+    RandomWalk.run(edgeDirection)(
+      graph.mapEdges(preprocess),
+      walkerConfig,
+      transition
+    )
 
 }
 
