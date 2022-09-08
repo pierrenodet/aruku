@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,11 +43,11 @@ private[aruku] class RDDCheckpointer[T](checkpointInterval: Int, sc: SparkContex
   private var updateCount = 0
 
   /**
-   * Update with a new Dataset. Handle persistence and checkpointing as needed.
-   * Since this handles persistence and checkpointing, this should be called before the Dataset
-   * has been materialized.
+   * Update with a new Dataset. Handle persistence and checkpointing as needed. Since this handles persistence and
+   * checkpointing, this should be called before the Dataset has been materialized.
    *
-   * @param newData  New Dataset created from previous Datasets in the lineage.
+   * @param newData
+   *   New Dataset created from previous Datasets in the lineage.
    */
   def update(newData: RDD[T]): Unit = {
     newData.persist(storageLevel)
@@ -62,21 +62,22 @@ private[aruku] class RDDCheckpointer[T](checkpointInterval: Int, sc: SparkContex
     updateCount += 1
 
     // Handle checkpointing (after persisting)
-    if (checkpointInterval != -1 && (updateCount % checkpointInterval) == 0
-        && sc.getCheckpointDir.nonEmpty) {
+    if (
+      checkpointInterval != -1 && (updateCount % checkpointInterval) == 0
+      && sc.getCheckpointDir.nonEmpty
+    ) {
       // Add new checkpoint before removing old checkpoints.
       newData.checkpoint()
       checkpointQueue.enqueue(newData)
       // Remove checkpoints before the latest one.
       var canDelete = true
-      while (checkpointQueue.size > 1 && canDelete) {
+      while (checkpointQueue.size > 1 && canDelete)
         // Delete the oldest checkpoint only if the next checkpoint exists.
         if (checkpointQueue(1).isCheckpointed) {
           removeCheckpointFile()
         } else {
           canDelete = false
         }
-      }
     }
   }
 
@@ -93,29 +94,26 @@ private[aruku] class RDDCheckpointer[T](checkpointInterval: Int, sc: SparkContex
    * Call this at the end to delete any remaining checkpoint files.
    */
   def deleteAllCheckpoints(): Unit =
-    while (checkpointQueue.nonEmpty) {
+    while (checkpointQueue.nonEmpty)
       removeCheckpointFile()
-    }
 
   /**
-   * Call this at the end to delete any remaining checkpoint files, except for the last checkpoint.
-   * Note that there may not be any checkpoints at all.
+   * Call this at the end to delete any remaining checkpoint files, except for the last checkpoint. Note that there may
+   * not be any checkpoints at all.
    */
   def deleteAllCheckpointsButLast(): Unit =
-    while (checkpointQueue.size > 1) {
+    while (checkpointQueue.size > 1)
       removeCheckpointFile()
-    }
 
   /**
-   * Get all current checkpoint files.
-   * This is useful in combination with [[deleteAllCheckpointsButLast()]].
+   * Get all current checkpoint files. This is useful in combination with [[deleteAllCheckpointsButLast()]].
    */
   def getAllCheckpointFiles: Array[String] =
     checkpointQueue.flatMap(_.getCheckpointFile).toArray
 
   /**
-   * Dequeue the oldest checkpointed Dataset, and remove its checkpoint files.
-   * This prints a warning but does not fail if the files cannot be removed.
+   * Dequeue the oldest checkpointed Dataset, and remove its checkpoint files. This prints a warning but does not fail
+   * if the files cannot be removed.
    */
   private def removeCheckpointFile(): Unit = {
     val old = checkpointQueue.dequeue()

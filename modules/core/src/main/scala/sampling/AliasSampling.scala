@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package aruku.sampling
 
 import scala.util.Random
-import scala.collection.mutable.MutableList
 import scala.collection.mutable.Queue
 
 sealed case class AliasSampling private[aruku] (probs: Array[Double], aliases: Array[Int], random: Random) {
@@ -34,7 +33,7 @@ object AliasSampling {
 
   def fromRawProbabilities(rawProbabilities: Array[Double], random: Random = new Random) = {
 
-    val copiedRawProbabilities = MutableList[Double](rawProbabilities: _*)
+    val copiedRawProbabilities = Array[Double](rawProbabilities: _*)
 
     val probabilities = new Array[Double](copiedRawProbabilities.size)
     val aliases       = new Array[Int](copiedRawProbabilities.size)

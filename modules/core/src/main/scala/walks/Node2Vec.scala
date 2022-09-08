@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,14 +48,15 @@ object Node2Vec {
       ) =>
         msg match {
           case Some(previousNeighbors) =>
-            if (previousNeighbors.contains(next)) {
+            val dst = next.dstId
+            if (previousNeighbors.contains(dst)) {
               1
-            } else if (next == walker.data.previous) {
+            } else if (dst == walker.data.previous) {
               1 / p
             } else {
               1 / q
             }
-          case None => 1.0
+          case None                    => 1.0
         },
       (_: VertexId, _: Array[Edge[Double]]) => math.max(1 / p, math.max(1, 1 / q)),
       (_: VertexId, _: Array[Edge[Double]]) => math.min(1 / p, math.min(1, 1 / q))

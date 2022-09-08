@@ -9,7 +9,7 @@ module.exports = {
   themeConfig: {
     navbar: {
       title: '歩く aruku',
-      links: [
+      items: [
         { href: '/aruku/api/index.html', label: 'API', position: 'right', target: '_parent' },
         { to: 'docs/overview', label: 'Documentation', position: 'right' },
         {
@@ -23,7 +23,9 @@ module.exports = {
     footer: {
       copyright: `Copyright © ${new Date().getFullYear()} Pierre Nodet`,
     },
-    disableDarkMode: true,
+    colorMode:{
+      disableSwitch : true,
+    },
     prism: {
       theme: require('prism-react-renderer/themes/nightOwl'),
       additionalLanguages: ['java', 'scala'],

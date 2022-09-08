@@ -16,7 +16,7 @@
 
 package aruku
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.graphx.{ Edge, Graph, VertexId }
 import org.apache.spark.graphx.util.GraphGenerators
 import org.apache.spark.SparkContext
@@ -30,11 +30,11 @@ import aruku.walks._
 import aruku._
 import aruku.implicits._
 
-class WalkSuite extends FunSuite {
+class WalkSuite extends AnyFunSuite {
 
   test("generate walks") {
 
-    //Start SparkContext
+    // Start SparkContext
     val sc = SparkContext.getOrCreate(
       new SparkConf()
         .setMaster("local[*]")
@@ -43,20 +43,20 @@ class WalkSuite extends FunSuite {
     )
     sc.setCheckpointDir("checkpoint")
 
-    //Generate Graph
-    val numVertices = 1000
+    // Generate Graph
+    val numVertices             = 1000
     val graph: Graph[Long, Int] =
       GraphGenerators
         .logNormalGraph(sc, numVertices = numVertices)
 
-    //Node2Vec Configuration
+    // Node2Vec Configuration
     val numWalkers = 5000
     val numEpochs  = 2
     val walkLength = 10
     val p          = 0.5
     val q          = 2
 
-    //Execute Random Walk
+    // Execute Random Walk
     val paths =
       graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
         Node2Vec.config(numWalkers, numEpochs),
@@ -67,7 +67,7 @@ class WalkSuite extends FunSuite {
 
     assert(paths.count() == numWalkers && sizes.map(size => math.abs(size - walkLength)).sum < 0.01 * numWalkers)
 
-    //Second API with a RDD without partitioner
+    // Second API with a RDD without partitioner
     val paths2 = RandomWalk.run(EdgeDirection.Out)(
       graph.mapEdges(_.attr.toDouble),
       Node2Vec.config(numWalkers, numEpochs),

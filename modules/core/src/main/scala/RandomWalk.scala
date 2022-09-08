@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,14 +48,12 @@ object RandomWalk {
       .mapPartitionsWithIndex(
         { (pid: Int, iter: Iterator[(VertexId, Array[Edge[Double]])]) =>
           val static = transitionBC.value.static
-          LocalGraphPartition.data ++= iter.map {
-            case (vid, data) => {
-              val components    = data.map(edge => static(vid, edge))
-              val sum           = components.sum
-              val probabilities = components.map(_ / sum)
-              val aliases       = AliasSampling.fromRawProbabilities(probabilities)
-              (vid, LocalData(data, aliases))
-            }
+          LocalGraphPartition.data ++= iter.map { case (vid, data) =>
+            val components    = data.map(edge => static(vid, edge))
+            val sum           = components.sum
+            val probabilities = components.map(_ / sum)
+            val aliases       = AliasSampling.fromRawProbabilities(probabilities)
+            (vid, LocalData(data, aliases))
           }
           Iterator.empty
         },
@@ -84,7 +82,7 @@ object RandomWalk {
               case AtRandom(probability, random) =>
                 if (random.nextDouble() < probability) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid)))
                 else None
-              case FromVertices(vertices) =>
+              case FromVertices(vertices)        =>
                 if (vertices.contains(vid)) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid))) else None
             }
           }
@@ -111,25 +109,22 @@ object RandomWalk {
 
     val fullWalkersReady = tooMuchWalkers
       .zipWithIndex()
-      .mapPartitions({
-        _.map {
-          case ((vid, walker), id) =>
-            (vid, WalkerState[T, M](walker.copy(id = id), Array.empty[VertexId], Option.empty[M], false))
-        }
-      }, preservesPartitioning = true)
+      .mapPartitions(
+        _.map { case ((vid, walker), id) =>
+          (vid, WalkerState[T, M](walker.copy(id = id), Array.empty[VertexId], Option.empty[M], false))
+        },
+        preservesPartitioning = true
+      )
       .cache()
 
     val batchedWalkers = {
-      for (i <- 0 until numEpochs) yield {
-        fullWalkersReady.filter {
-          case (_, state) =>
-            val numWalkers = walkerConfigBC.value.numWalkers
-            val numEpochs  = walkerConfigBC.value.numEpochs
-            (state.walker.id < ((i + 1) * numWalkers / numEpochs)) && (state.walker.id >= (i * numWalkers / numEpochs))
-        }
+      for (i <- 0 until numEpochs) yield fullWalkersReady.filter { case (_, state) =>
+        val numWalkers = walkerConfigBC.value.numWalkers
+        val numEpochs  = walkerConfigBC.value.numEpochs
+        (state.walker.id < ((i + 1) * numWalkers / numEpochs)) && (state.walker.id >= (i * numWalkers / numEpochs))
       }
     }.toArray
-    //Materialized Walkers
+    // Materialized Walkers
     batchedWalkers.map(_.count())
 
     fullWalkersReady.unpersist()
@@ -158,43 +153,42 @@ object RandomWalk {
         val update     = walkerConfigBC.value.update
         val transition = transitionBC.value
 
-        iter.map {
-          case (ivid, istate) =>
-            var vid         = ivid
-            var walker      = istate.walker
-            var path        = istate.path
-            var message     = istate.message
-            var done        = istate.done || !(Random.nextDouble() < transition.extension(walker, vid))
-            var doneLocally = false
+        iter.map { case (ivid, istate) =>
+          var vid         = ivid
+          var walker      = istate.walker
+          var path        = istate.path
+          var message     = istate.message
+          var done        = istate.done || !(Random.nextDouble() < transition.extension(walker, vid))
+          var doneLocally = false
 
-            while (!done && !doneLocally) {
-              val localData = LocalGraphPartition.data.get(vid)
-              localData match {
-                case None =>
-                  walker = walker
-                    .copy(
-                      step = walker.step + 1
-                    )
-                  path = path ++ Array(vid)
-                  message = None
-                  done = true
-                case Some(LocalData(neighbors, alias)) =>
-                  val rejection = RejectionSampling.fromWalkerTransition[T, M](walker, transition)
-                  val ne        = neighbors(rejection.next(vid, neighbors, message, alias))
-                  val nvid      = ne.dstId
-                  walker = walker
-                    .copy(
-                      step = walker.step + 1,
-                      data = update(walker, vid, ne)
-                    )
-                  path = path ++ Array(vid)
-                  message = transition.message(walker, vid, neighbors)
-                  doneLocally = !LocalGraphPartition.data.contains(nvid)
-                  vid = nvid
-                  done = !(Random.nextDouble() < transition.extension(walker, vid))
-              }
+          while (!done && !doneLocally) {
+            val localData = LocalGraphPartition.data.get(vid)
+            localData match {
+              case None                              =>
+                walker = walker
+                  .copy(
+                    step = walker.step + 1
+                  )
+                path = path ++ Array(vid)
+                message = None
+                done = true
+              case Some(LocalData(neighbors, alias)) =>
+                val rejection = RejectionSampling.fromWalkerTransition[T, M](walker, transition)
+                val ne        = neighbors(rejection.next(vid, neighbors, message, alias))
+                val nvid      = ne.dstId
+                walker = walker
+                  .copy(
+                    step = walker.step + 1,
+                    data = update(walker, vid, ne)
+                  )
+                path = path ++ Array(vid)
+                message = transition.message(walker, vid, neighbors)
+                doneLocally = !LocalGraphPartition.data.contains(nvid)
+                vid = nvid
+                done = !(Random.nextDouble() < transition.extension(walker, vid))
             }
-            (vid, WalkerState(walker, path, message, done))
+          }
+          (vid, WalkerState(walker, path, message, done))
         }
       },
       preservesPartitioning = false
@@ -237,8 +231,8 @@ object RandomWalk {
       val walkerCheckpointer =
         new RDDCheckpointer[(VertexId, WalkerState[T, M])](checkpointInterval, sc, StorageLevel.DISK_ONLY)
       walkerCheckpointer.update(walkingWalkers)
-      var numWalkingWalkers = walkingWalkers.filter {
-        case (_, state) => !state.done
+      var numWalkingWalkers  = walkingWalkers.filter { case (_, state) =>
+        !state.done
       }.count()
 
       var accCompleteWalkers = Array.empty[RDD[(Long, Array[VertexId])]]
@@ -252,22 +246,22 @@ object RandomWalk {
         walkingWalkers = walk(transferWalkers(routingTable, walkingWalkers), walkerConfigBC, transitionBC)
         walkerCheckpointer.update(walkingWalkers)
 
-        val completeWalkers = walkingWalkers.filter {
-          case (_, state) => state.done
-        }.mapPartitions({
-            _.map {
-              case (_, state) => (state.walker.id, state.path)
-            }
-          }, preservesPartitioning = true)
-          .persist(StorageLevel.DISK_ONLY)
+        val completeWalkers = walkingWalkers.filter { case (_, state) =>
+          state.done
+        }.mapPartitions(
+          _.map { case (_, state) =>
+            (state.walker.id, state.path)
+          },
+          preservesPartitioning = true
+        ).persist(StorageLevel.DISK_ONLY)
 
         if (sc.getCheckpointDir.nonEmpty) completeWalkers.checkpoint()
         completeWalkers.count()
 
         accCompleteWalkers = accCompleteWalkers ++ Array(completeWalkers)
 
-        walkingWalkers = walkingWalkers.filter {
-          case (_, state) => !state.done
+        walkingWalkers = walkingWalkers.filter { case (_, state) =>
+          !state.done
         }
         numWalkingWalkers = walkingWalkers.count()
 
@@ -282,7 +276,7 @@ object RandomWalk {
 
       fullCompleteWalkers.count()
 
-      //Cleaning Data
+      // Cleaning Data
       walkerCheckpointer.deleteAllCheckpoints()
       accCompleteWalkers.foreach { rdd =>
         rdd.getCheckpointFile.foreach(RDDCheckpointer.removeCheckpointFile(_, sc.hadoopConfiguration))
