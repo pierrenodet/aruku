@@ -16,9 +16,8 @@
 
 package aruku.sampling
 
-import scala.util.Random
 import scala.collection.mutable.Queue
-import scala.collection.mutable.ArrayDeque
+import scala.util.Random
 
 sealed abstract case class AliasMethod private (probs: Array[Double], aliases: Array[Int], random: Random) {
 

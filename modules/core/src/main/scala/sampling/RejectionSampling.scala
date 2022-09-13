@@ -17,54 +17,62 @@
 package aruku.sampling
 
 import scala.util.Random
-import scala.collection.mutable.Queue
-import org.apache.spark.graphx.{ Edge, VertexId }
-import aruku._
 
-final case class RejectionSampling[T, M] private[aruku] (
-  dynamic: (VertexId, Edge[Double], Option[M]) => Double,
-  upperBound: (VertexId, Array[Edge[Double]]) => Double,
-  lowerBound: (VertexId, Array[Edge[Double]]) => Double,
-  random: Random
+sealed abstract case class RejectionSampling private (private val nextInt: () => Int)(
+  f: Int => Double,
+  upperBound: Double,
+  lowerBound: Double = 0,
+  random: Random = new Random
 ) {
 
-  def next(current: VertexId, neighbors: Array[Edge[Double]], message: Option[M], alias: AliasMethod): Int = {
-
-    val ub = upperBound(current, neighbors)
-    val lb = lowerBound(current, neighbors)
+  def sample(): Int = {
 
     var hit = false
 
     var dart = 0.0
-    var nidx = 0
+    var i    = 0
 
     while (!hit) {
 
-      dart = random.nextDouble() * ub
-      nidx = alias.next()
+      i = nextInt()
+      dart = random.nextDouble() * upperBound
 
-      if (dart < lb || dart < dynamic(current, neighbors(nidx), message)) {
+      if (dart < lowerBound || dart < f(i)) {
         hit = true
       }
 
     }
 
-    nidx
+    return i
 
   }
 
 }
 
 object RejectionSampling {
+  def fromDomain(
+    inf: Int,
+    sup: Int
+  )(f: Int => Double, upperBound: Double, lowerBound: Double = 0, random: Random = new Random): RejectionSampling = {
 
-  def fromWalkerTransition[T, M](walker: Walker[T], transition: Transition[T, M], random: Random = new Random) = {
+    require(sup > inf)
+    require(lowerBound >= 0)
+    require(upperBound >= lowerBound)
+    require(upperBound > 0)
 
-    val dynamic    = Function.uncurried(transition.dynamic.curried.apply(walker))
-    val upperBound = transition.upperBound
-    val lowerBound = transition.lowerBound
-
-    new RejectionSampling(dynamic, upperBound, lowerBound, random)
+    new RejectionSampling(() => random.nextInt(sup - inf + 1) + inf)(f, upperBound, lowerBound, random) {}
 
   }
 
+  def fromPrior(
+    prior: () => Int
+  )(f: Int => Double, upperBound: Double, lowerBound: Double = 0, random: Random = new Random): RejectionSampling = {
+
+    require(lowerBound >= 0)
+    require(upperBound >= lowerBound)
+    require(upperBound > 0)
+
+    new RejectionSampling(prior)(f, upperBound, lowerBound, random) {}
+
+  }
 }

@@ -16,28 +16,14 @@
 
 package aruku.sampling
 
-import org.apache.spark.graphx.{ Edge, Graph, VertexId }
-import org.apache.spark.graphx.util.GraphGenerators
-import org.apache.spark.SparkContext
-import org.apache.spark.graphx.TripletFields
-import org.apache.spark.rdd.RDD
-import org.apache.spark.HashPartitioner
-import org.apache.spark.graphx.EdgeDirection
-import org.apache.spark.SparkConf
-
-import aruku.walks._
 import aruku._
-import aruku.implicits._
-import org.apache.spark.graphx.GraphLoader
 import org.scalacheck.Gen
-import org.scalacheck.Arbitrary
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import org.scalacheck.Shrink
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.language.postfixOps
-import org.scalatest.matchers.should.Matchers._
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalacheck.Shrink
 import scala.util.Random
 
 class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks {
@@ -58,7 +44,7 @@ class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks 
     forAll(intervalGen(-10, 10, 5d)) { case (inf, sup) =>
       val domain = Range.inclusive(inf, sup)
       val f      = domain.map(i => (i, math.abs(i % 2).toDouble)).toMap
-      val rs     = RejectionSampling2.fromDomain(inf, sup)(f, 1)
+      val rs     = RejectionSampling.fromDomain(inf, sup)(f, 1)
 
       val n = 10000
 
@@ -77,7 +63,7 @@ class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks 
     forAll(intervalGen(-10, 10, 5d)) { case (inf, sup) =>
       val domain = Range.inclusive(inf, sup)
       val f      = (x: Int) => math.exp(-math.pow((x - (sup + inf) / 2), 2))
-      val rs     = RejectionSampling2.fromDomain(inf, sup)(f, 1, 1)
+      val rs     = RejectionSampling.fromDomain(inf, sup)(f, 1, 1)
 
       val n = 1000
 
@@ -94,9 +80,9 @@ class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks 
 
     forAll(intervalGen(-10, 10, 5d)) { case (inf, sup) =>
       val f           = (x: Int) => math.exp(-math.pow((x - (sup + inf) / 2), 2))
-      val domain      = RejectionSampling2.fromDomain(inf, sup)(f, 1, 0, new Random(1))
+      val domain      = RejectionSampling.fromDomain(inf, sup)(f, 1, 0, new Random(1))
       val priorRandom = new Random(1)
-      val prior       = RejectionSampling2.fromPrior(() => priorRandom.nextInt(sup - inf + 1) + inf)(f, 1, 0, priorRandom)
+      val prior       = RejectionSampling.fromPrior(() => priorRandom.nextInt(sup - inf + 1) + inf)(f, 1, 0, priorRandom)
 
       val n = 100
 
@@ -111,8 +97,8 @@ class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks 
 
     forAll(intervalGen(-10, 10, 5d)) { case (inf, sup) =>
       val f       = (x: Int) => math.exp(-math.pow((x - (sup + inf) / 2), 2))
-      val domain  = RejectionSampling2.fromDomain(inf, sup)(f, 1)
-      val domain2 = RejectionSampling2.fromDomain(inf, sup)(f, 1)
+      val domain  = RejectionSampling.fromDomain(inf, sup)(f, 1)
+      val domain2 = RejectionSampling.fromDomain(inf, sup)(f, 1)
 
       val n = 100
 
@@ -127,7 +113,7 @@ class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks 
 
     forAll(intervalGen(-10, 10, 5d)) { case (inf, sup) =>
       val f      = (x: Int) => math.exp(-math.pow((x - (sup + inf) / 2), 2))
-      val domain = RejectionSampling2.fromDomain(inf, sup)(f, 1)
+      val domain = RejectionSampling.fromDomain(inf, sup)(f, 1)
 
       val n = 100
 
@@ -139,13 +125,13 @@ class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks 
 
   test("wrong domain should produce exception") {
 
-    assertThrows[IllegalArgumentException](RejectionSampling2.fromDomain(1, -1)(_.toDouble, 1))
+    assertThrows[IllegalArgumentException](RejectionSampling.fromDomain(1, -1)(_.toDouble, 1))
 
   }
 
   test("wrong lowerbound should produce exception") {
 
-    assertThrows[IllegalArgumentException](RejectionSampling2.fromDomain(1, -1)(identity, 1, 1))
+    assertThrows[IllegalArgumentException](RejectionSampling.fromDomain(1, -1)(identity, 1, 1))
 
   }
 

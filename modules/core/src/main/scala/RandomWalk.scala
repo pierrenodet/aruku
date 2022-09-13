@@ -16,19 +16,23 @@
 
 package aruku
 
+import aruku.partition._
+import aruku.sampling._
+import aruku.util._
+import org.apache.spark.HashPartitioner
+import org.apache.spark.Partitioner
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{ HashPartitioner, Partitioner }
-import org.apache.spark.broadcast.Broadcast
-import scala.util.Random
-import aruku.util._
-import aruku.sampling._
-import aruku.partition._
 import org.apache.spark.storage.StorageLevel
-import scala.concurrent._, duration._
+
 import java.util.concurrent.Executors
-import scala.reflect.ClassTag
 import scala.collection.immutable.ArraySeq
+import scala.concurrent._
+import scala.reflect.ClassTag
+import scala.util.Random
+
+import duration._
 
 final case class WalkerState[T, M] private[aruku] (
   walker: Walker[T],
@@ -172,9 +176,9 @@ object RandomWalk {
                 message = None
                 done = true
               case Some(LocalData(neighbors, alias)) =>
-                val rejection = RejectionSampling.fromWalkerTransition[T, M](walker, transition)
-                val ne        = neighbors(rejection.next(vid, neighbors, message, alias))
-                val nvid      = ne.dstId
+                val kks  = KnightKingSampling.fromWalkerTransition[T, M](walker, transition)
+                val ne   = neighbors(kks.sample(vid, neighbors, message, alias))
+                val nvid = ne.dstId
                 walker = walker
                   .copy(
                     step = walker.step + 1,
@@ -212,7 +216,7 @@ object RandomWalk {
 
     implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(walkerConfig.parallelism))
 
-    var walkers: Array[RDD[(VertexId, WalkerState[T, M])]] = initWalkers(flatten.keys, walkerConfigBC, partitioner)
+    var walkers: Array[RDD[(Long, WalkerState[T, M])]] = initWalkers(flatten.keys, walkerConfigBC, partitioner)
 
     val routingTable = initRoutingTable(flatten, transitionBC, partitioner).cache()
     routingTable.count()
@@ -228,7 +232,7 @@ object RandomWalk {
       var walkingWalkers = walker
 
       val walkerCheckpointer =
-        new RDDCheckpointer[(VertexId, WalkerState[T, M])](checkpointInterval, sc, StorageLevel.DISK_ONLY)
+        new RDDCheckpointer[(Long, WalkerState[T, M])](checkpointInterval, sc, StorageLevel.DISK_ONLY)
       walkerCheckpointer.update(walkingWalkers)
       var numWalkingWalkers  = walkingWalkers.filter { case (_, state) =>
         !state.done
@@ -236,7 +240,7 @@ object RandomWalk {
 
       var accCompleteWalkers = Array.empty[RDD[(Long, Array[VertexId])]]
 
-      var prevWalkers: RDD[(VertexId, WalkerState[T, M])] = null
+      var prevWalkers: RDD[(Long, WalkerState[T, M])] = null
 
       while (numWalkingWalkers > 0) {
 

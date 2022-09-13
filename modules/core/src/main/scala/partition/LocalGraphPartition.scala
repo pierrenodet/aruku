@@ -16,11 +16,13 @@
 
 package aruku.partition
 
-import scala.collection.concurrent.TrieMap
-import org.apache.spark.graphx.{ Edge, VertexId }
-import scala.collection.mutable.ArrayBuffer
-import org.apache.spark.rdd.RDD
 import aruku.sampling.AliasMethod
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
+import org.apache.spark.rdd.RDD
+
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable.ArrayBuffer
 
 object LocalGraphPartition {
 

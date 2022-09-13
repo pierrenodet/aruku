@@ -16,8 +16,10 @@
 
 package aruku
 
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
+
 import scala.util.Random
-import org.apache.spark.graphx.{ Edge, VertexId }
 
 final case class WalkerConfig[T] private[aruku] (
   numWalkers: Long,

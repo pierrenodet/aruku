@@ -16,7 +16,8 @@
 
 package aruku
 
-import org.apache.spark.graphx.{ Edge, VertexId }
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
 
 final case class Transition[T, M] private[aruku] (
   extension: (Walker[T], VertexId) => Double,

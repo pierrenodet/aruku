@@ -17,8 +17,8 @@
 package aruku.walks
 
 import aruku._
-
-import org.apache.spark.graphx.{ Edge, VertexId }
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
 
 case object PersonalizedPageRank {
 

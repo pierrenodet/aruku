@@ -16,14 +16,13 @@
 
 package aruku.util
 
-import scala.collection.mutable
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
+
+import scala.collection.mutable
 
 /**
  * Sadly need to copy paste it because it's spark private

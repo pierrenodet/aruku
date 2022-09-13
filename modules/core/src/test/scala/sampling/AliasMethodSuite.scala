@@ -16,28 +16,15 @@
 
 package aruku.sampling
 
-import org.apache.spark.graphx.{ Edge, Graph, VertexId }
-import org.apache.spark.graphx.util.GraphGenerators
-import org.apache.spark.SparkContext
-import org.apache.spark.graphx.TripletFields
-import org.apache.spark.rdd.RDD
-import org.apache.spark.HashPartitioner
-import org.apache.spark.graphx.EdgeDirection
-import org.apache.spark.SparkConf
-
-import aruku.walks._
 import aruku._
 import aruku.implicits._
-import org.apache.spark.graphx.GraphLoader
 import org.scalacheck.Gen
-import org.scalacheck.Arbitrary
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import org.scalacheck.Shrink
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.language.postfixOps
-import org.scalatest.matchers.should.Matchers._
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalacheck.Shrink
 
 class AliasMethodSuite extends AnyFunSuite with ScalaCheckPropertyChecks {
 

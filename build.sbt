@@ -66,12 +66,15 @@ lazy val core = project
     name        := "aruku-core",
     description := "A Random Walk Engine for Apache Spark",
     libraryDependencies ++= Seq(
-      "org.apache.spark"  %% "spark-core"         % sparkVersion      % Provided,
-      "org.apache.spark"  %% "spark-graphx"       % sparkVersion      % Provided,
-      "org.scalacheck"    %% "scalacheck"         % scalaCheckVersion % Test,
-      "org.scalatest"     %% "scalatest"          % scalatestVersion  % Test,
-      "org.scalatestplus" %% "scalacheck-1-16"    % "3.2.13.0"        % Test,
-      "org.scalatest"     %% "scalatest-funsuite" % scalatestVersion  % Test
+      "org.apache.spark"  %% "spark-core"              % sparkVersion      % Provided,
+      "org.apache.spark"  %% "spark-graphx"            % sparkVersion      % Provided,
+      "org.scalacheck"    %% "scalacheck"              % scalaCheckVersion % Test,
+      "org.scalatest"     %% "scalatest"               % scalatestVersion  % Test,
+      "org.scalatestplus" %% ("scalacheck" + scalaCheckVersion
+        .split(".")
+        .take(2)
+        .mkString("-"))    % (scalatestVersion + ".0") % Test,
+      "org.scalatest"     %% "scalatest-funsuite"      % scalatestVersion  % Test
     )
   )
 

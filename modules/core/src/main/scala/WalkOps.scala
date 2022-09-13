@@ -16,10 +16,11 @@
 
 package aruku
 
-import scala.reflect.ClassTag
+import org.apache.spark.HashPartitioner
 import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.HashPartitioner
+
+import scala.reflect.ClassTag
 import scala.util.Random
 
 class WalkOps[VD: ClassTag, ED: ClassTag](graph: Graph[VD, ED]) extends Serializable {
