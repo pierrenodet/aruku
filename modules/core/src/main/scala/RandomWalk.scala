@@ -51,7 +51,7 @@ object RandomWalk {
     graph
       .partitionBy(partitioner)
       .mapPartitionsWithIndex(
-        { (pid: Int, iter: Iterator[(VertexId, Array[Edge[Double]])]) =>
+        { (_, iter) =>
           val static = transitionBC.value.static
           LocalGraphPartition.data ++= iter.map { case (vid, data) =>
             val probabilities = data.map(edge => static(vid, edge))
@@ -82,10 +82,10 @@ object RandomWalk {
           val walkerConfigLocal = walkerConfigBC.value
           iter.flatMap { vid =>
             walkerConfigLocal.start match {
-              case AtRandom(probability, random) =>
-                if (random.nextDouble() < probability) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid)))
+              case AtRandom(probability)  =>
+                if (Random.nextDouble() < probability) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid)))
                 else None
-              case FromVertices(vertices)        =>
+              case FromVertices(vertices) =>
                 if (vertices.contains(vid)) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid))) else None
             }
           }
@@ -161,7 +161,7 @@ object RandomWalk {
           var walker      = istate.walker
           var path        = istate.path
           var message     = istate.message
-          var done        = istate.done || !(Random.nextDouble() < transition.extension(walker, vid))
+          var done        = istate.done
           var doneLocally = false
 
           while (!done && !doneLocally) {
@@ -188,7 +188,7 @@ object RandomWalk {
                 message = transition.message(walker, vid, neighbors)
                 doneLocally = !LocalGraphPartition.data.contains(nvid)
                 vid = nvid
-                done = !(Random.nextDouble() < transition.extension(walker, vid))
+                done = !((new Random()).nextDouble() < transition.extension(walker, vid))
             }
           }
           (vid, WalkerState(walker, path, message, done))

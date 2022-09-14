@@ -32,10 +32,15 @@ import org.apache.spark.rdd.RDD
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
 
 import scala.language.postfixOps
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class WalkSuite extends AnyFunSuite with BeforeAndAfterAll {
+class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckPropertyChecks {
+
+  import org.scalacheck.Shrink.shrinkAny
 
   var sc: SparkContext = _
 
@@ -57,6 +62,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll {
 
   test("node2vec dynamic transition is respected") {
 
+    // Replace by GraphGenerators.starGraph
     val previousVertice     = 1L
     val starVertice         = 2L
     val prevNeighborVertice = 3L
@@ -68,93 +74,116 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll {
         Edge(previousVertice, starVertice, 1.0)
       )
 
-    val parallelism = 4
+    val parallelism = 16
     val graph       = Graph(sc.makeRDD(vertices, parallelism), sc.makeRDD(edges))
 
-    val numWalkers = vertices.size * 5000
+    val numWalkers = 10000
     val numEpochs  = 1
     val walkLength = 3
-    val p          = 0.5
-    val q          = 2
 
-    val paths: RDD[(Long, Array[VertexId])] = graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
-      Node2Vec.config(numWalkers, numEpochs),
-      Node2Vec.transition(p, q, walkLength)
-    )
+    val pgen = Gen.chooseNum(0.1, 0.9)
+    val qgen = Gen.chooseNum(0.1, 0.9)
 
-    assert(paths.count() == numWalkers)
+    val gen = for {
+      p <- pgen
+      q <- qgen
+    } yield (p, q)
 
-    val startsWithPrevVerticeAndGoToStar = paths.filter { case (_, p) =>
-      p(0) == previousVertice && p(1) == starVertice
+    forAll(gen) { case (p, q) =>
+      val paths: RDD[(Long, Array[VertexId])] = graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
+        Node2Vec.config(numWalkers, numEpochs),
+        Node2Vec.transition(p, q, walkLength)
+      )
+
+      assert(paths.count() == numWalkers)
+      assert(paths.map { case (_, path) =>
+        (path.head, 1)
+      }.countByKey() == Map((previousVertice -> numWalkers / 2), (starVertice -> numWalkers / 2)))
+
+      val startsWithPrevVerticeAndGoToStar = paths.filter { case (_, p) =>
+        p(0) == previousVertice && p(1) == starVertice
+      }
+      val trueNumWalkers                   = startsWithPrevVerticeAndGoToStar.count()
+      val ends                             = startsWithPrevVerticeAndGoToStar.map(_._2.last)
+      val estimate                         = ends
+        .map(e => (e, 1.0 / trueNumWalkers))
+        .reduceByKeyLocally(_ + _)
+
+      val proba    = Map(
+        (previousVertice, 1.0 / p),
+        (starVertice, 0.0),
+        (prevNeighborVertice, 1.0),
+        (aloneVertice, 1.0 / q)
+      )
+      val sumProba = proba.values.sum
+      val distrib  = proba.view.mapValues(_ / sumProba).toMap
+
+      val precision = 5e-2
+      assert(estimate(previousVertice) === distrib(previousVertice) +- precision)
+      assert(estimate.getOrElse(starVertice, 0.0) === distrib(starVertice) +- precision)
+      assert(estimate(prevNeighborVertice) === distrib(prevNeighborVertice) +- precision)
+      assert(estimate(aloneVertice) === distrib(aloneVertice) +- precision)
     }
-    val trueNumWalkers                   = startsWithPrevVerticeAndGoToStar.count()
-    val ends                             = startsWithPrevVerticeAndGoToStar.map(_._2.last)
-    val estimate                         = ends
-      .map(e => (e, 1.0 / trueNumWalkers))
-      .reduceByKeyLocally(_ + _)
-
-    val proba    = Map(
-      (previousVertice, 1.0 / p),
-      (starVertice, 0.0),
-      (prevNeighborVertice, 1.0),
-      (aloneVertice, 1.0 / q)
-    )
-    val sumProba = proba.values.sum
-    val distrib  = proba.view.mapValues(_ / sumProba).toMap
-
-    val precision = 1e-2
-    assert(
-      distrib.keys.forall(i => distrib(i) === estimate.getOrElse(i, 0.0) +- precision)
-    )
   }
 
-//   test("generate walks") {
+  test("personalized page rank stochastic length") {
 
-//     // Start SparkContext
-//     val sc = SparkContext.getOrCreate(
-//       new SparkConf()
-//         .setMaster("local[*]")
-//         .setAppName("example")
-//         .set("spark.graphx.pregel.checkpointInterval", "1")
-//     )
-//     sc.setCheckpointDir("checkpoint")
+    // Generate Graph
+    val numVertices             = 1000
+    val parallelism             = 4
+    val graph: Graph[Long, Int] =
+      GraphGenerators
+        .logNormalGraph(sc, numVertices = numVertices, numEParts = parallelism)
 
-//     // Generate Graph
-//     val numVertices             = 1000
-//     val graph: Graph[Long, Int] =
-//       GraphGenerators
-//         .logNormalGraph(sc, numVertices = numVertices)
-//     val full                    = Graph(graph.vertices, graph.edges.union(graph.edges.reverse))
+    val gen = Gen.chooseNum(0.1, 0.9)
 
-//     // Node2Vec Configuration
-//     val numWalkers = 5000
-//     val numEpochs  = 2
-//     val walkLength = 10
-//     val p          = 0.5
-//     val q          = 2
+    forAll(gen) { pi =>
+      val numWalkers = 100000
+      val numEpochs  = 1
 
-//     // Execute Random Walk
-//     val paths =
-//       graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
-//         Node2Vec.config(numWalkers, numEpochs),
-//         Node2Vec.transition(p, q, walkLength)
-//       )
+      val paths: RDD[(Long, Array[VertexId])] = graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Either)(
+        PersonalizedPageRank.config(numWalkers, numEpochs),
+        PersonalizedPageRank.transition(pi)
+      )
 
-//     val sizes = paths.collect().map { case (_, path) => path.size }
+      val precision = 5e-2
 
-//     assert(paths.count() == numWalkers && sizes.map(size => math.abs(size - walkLength)).sum < 0.01 * numWalkers)
+      val numPaths = paths.count()
 
-//     // Second API with a RDD without partitioner
-//     val paths2 = RandomWalk.run(EdgeDirection.Out)(
-//       graph.mapEdges(_.attr.toDouble),
-//       Node2Vec.config(numWalkers, numEpochs),
-//       Node2Vec.transition(p, q, walkLength)
-//     )
+      assert(numPaths == numWalkers)
+      assert(paths.filter(_._2.isEmpty).count() == 0)
+      assert(paths.filter(_._2.size == 1).count().toDouble / numPaths === (1 - pi) +- precision)
+      assert(paths.map(_._2.size).sum() / numPaths === 1 + (pi / (1 - pi)) +- precision)
+    }
 
-//     val sizes2 = paths2.collect().map { case (_, path) => path.size }
+  }
 
-//     assert(paths2.count() == numWalkers && sizes2.map(size => math.abs(size - walkLength)).sum < 0.01 * numWalkers)
+  test("random walk never go twice in the same node") {
 
-//   }
+    // Generate Graph
+    val numVertices             = 1000
+    val parallelism             = 1
+    val graph: Graph[Long, Int] =
+      GraphGenerators
+        .logNormalGraph(sc, numVertices = numVertices, numEParts = parallelism)
+        .removeSelfEdges()
+
+    val numWalkers = 1000
+    val walkLength = 10
+
+    val paths: RDD[(Long, Array[VertexId])] =
+      graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
+        DeepWalk.config(numWalkers),
+        DeepWalk.transition(walkLength)
+      )
+
+    assert(
+      paths
+        .map(_._2)
+        .collect()
+        .forall(path => path.toList.sliding(2).collect { case head :: next => head != next.head }.forall(identity))
+    )
+
+  }
 
 }

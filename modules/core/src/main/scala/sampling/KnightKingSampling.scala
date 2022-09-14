@@ -27,14 +27,14 @@ final case class KnightKingSampling[T, M] private[aruku] (
   dynamic: (VertexId, Edge[Double], Option[M]) => Double,
   upperBound: (VertexId, Array[Edge[Double]]) => Double,
   lowerBound: (VertexId, Array[Edge[Double]]) => Double,
-  random: Random
+  random: Random = new Random
 ) {
 
   def sample(current: VertexId, neighbors: Array[Edge[Double]], message: Option[M], alias: AliasMethod): Int = {
 
+    val f  = (id: Int) => dynamic(current, neighbors(id), message)
     val ub = upperBound(current, neighbors)
     val lb = lowerBound(current, neighbors)
-    val f  = (id: Int) => dynamic(current, neighbors(id), message)
 
     RejectionSampling.fromPrior(alias.next)(f, ub, lb, random).sample()
   }

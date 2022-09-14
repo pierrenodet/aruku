@@ -31,8 +31,8 @@ final case class WalkerConfig[T] private[aruku] (
 )
 
 sealed trait StartingStrategy
-final case class AtRandom(probability: Double, random: Random = new Random) extends StartingStrategy
-final case class FromVertices(vertices: Array[VertexId])                    extends StartingStrategy
+final case class AtRandom(probability: Double)           extends StartingStrategy
+final case class FromVertices(vertices: Array[VertexId]) extends StartingStrategy
 
 object WalkerConfig {
   def updating[T](
