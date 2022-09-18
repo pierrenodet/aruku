@@ -21,14 +21,14 @@ import scala.collection.mutable.Queue
 import org.apache.spark.graphx.{ Edge, VertexId }
 import aruku._
 
-sealed case class RejectionSampling[T, M] private[aruku] (
+final case class RejectionSampling[T, M] private[aruku] (
   dynamic: (VertexId, Edge[Double], Option[M]) => Double,
   upperBound: (VertexId, Array[Edge[Double]]) => Double,
   lowerBound: (VertexId, Array[Edge[Double]]) => Double,
   random: Random
 ) {
 
-  def next(current: VertexId, neighbors: Array[Edge[Double]], message: Option[M], alias: AliasSampling): Int = {
+  def next(current: VertexId, neighbors: Array[Edge[Double]], message: Option[M], alias: AliasMethod): Int = {
 
     val ub = upperBound(current, neighbors)
     val lb = lowerBound(current, neighbors)
@@ -41,7 +41,7 @@ sealed case class RejectionSampling[T, M] private[aruku] (
     while (!hit) {
 
       dart = random.nextDouble() * ub
-      nidx = alias.next
+      nidx = alias.next()
 
       if (dart < lb || dart < dynamic(current, neighbors(nidx), message)) {
         hit = true

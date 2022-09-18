@@ -28,6 +28,7 @@ import org.apache.spark.storage.StorageLevel
 import scala.concurrent._, duration._
 import java.util.concurrent.Executors
 import scala.reflect.ClassTag
+import scala.collection.immutable.ArraySeq
 
 final case class WalkerState[T, M] private[aruku] (
   walker: Walker[T],
@@ -49,10 +50,8 @@ object RandomWalk {
         { (pid: Int, iter: Iterator[(VertexId, Array[Edge[Double]])]) =>
           val static = transitionBC.value.static
           LocalGraphPartition.data ++= iter.map { case (vid, data) =>
-            val components    = data.map(edge => static(vid, edge))
-            val sum           = components.sum
-            val probabilities = components.map(_ / sum)
-            val aliases       = AliasSampling.fromRawProbabilities(probabilities)
+            val probabilities = data.map(edge => static(vid, edge))
+            val aliases       = AliasMethod.fromRawProbabilities(probabilities)
             (vid, LocalData(data, aliases))
           }
           Iterator.empty
@@ -270,7 +269,7 @@ object RandomWalk {
       }
 
       val fullCompleteWalkers =
-        sc.union(accCompleteWalkers)
+        sc.union(ArraySeq.unsafeWrapArray(accCompleteWalkers))
           .partitionBy(partitioner)
           .cache()
 
@@ -295,7 +294,7 @@ object RandomWalk {
     routingTable.unpersist()
 
     val res = sc
-      .union(accFullCompleteWalkers)
+      .union(ArraySeq.unsafeWrapArray(accFullCompleteWalkers))
       .partitionBy(partitioner)
       .cache()
 

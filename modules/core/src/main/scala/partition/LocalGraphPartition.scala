@@ -20,7 +20,7 @@ import scala.collection.concurrent.TrieMap
 import org.apache.spark.graphx.{ Edge, VertexId }
 import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.rdd.RDD
-import aruku.sampling.AliasSampling
+import aruku.sampling.AliasMethod
 
 object LocalGraphPartition {
 
@@ -29,4 +29,4 @@ object LocalGraphPartition {
 }
 
 //Could be nice to have something parametric to the edge type
-case class LocalData(neighbors: Array[Edge[Double]], aliasMethods: AliasSampling)
+case class LocalData(neighbors: Array[Edge[Double]], aliasMethods: AliasMethod)

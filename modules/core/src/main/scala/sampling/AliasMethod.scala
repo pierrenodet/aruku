@@ -18,10 +18,11 @@ package aruku.sampling
 
 import scala.util.Random
 import scala.collection.mutable.Queue
+import scala.collection.mutable.ArrayDeque
 
-sealed case class AliasSampling private[aruku] (probs: Array[Double], aliases: Array[Int], random: Random) {
+sealed abstract case class AliasMethod private (probs: Array[Double], aliases: Array[Int], random: Random) {
 
-  def next: Int = {
+  def next(): Int = {
     val column   = random.nextInt(probs.size)
     val coinToss = random.nextDouble() < probs(column)
     if (coinToss) column else aliases(column)
@@ -29,38 +30,47 @@ sealed case class AliasSampling private[aruku] (probs: Array[Double], aliases: A
 
 }
 
-object AliasSampling {
+object AliasMethod {
 
   def fromRawProbabilities(rawProbabilities: Array[Double], random: Random = new Random) = {
 
-    val copiedRawProbabilities = Array[Double](rawProbabilities: _*)
+    require(!rawProbabilities.isEmpty)
 
-    val probabilities = new Array[Double](copiedRawProbabilities.size)
-    val aliases       = new Array[Int](copiedRawProbabilities.size)
+    val rawprobs = rawProbabilities.clone()
+
+    val sum = rawprobs.sum
+    for (i <- rawprobs.indices)
+      rawprobs(i) /= sum
+
+    val probs   = new Array[Double](rawprobs.size)
+    val aliases = new Array[Int](rawprobs.size)
 
     val small, large = new Queue[Int]
 
-    val average: Double = 1.0 / copiedRawProbabilities.size;
+    val n = rawprobs.size;
 
-    for (p <- probabilities.indices)
-      if (probabilities(p) >= average) large += p else small += p
+    for (i <- rawprobs.indices)
+      rawprobs(i) *= n
+
+    for (i <- rawprobs.indices)
+      if (rawprobs(i) >= 1) large += i else small += i
 
     while (small.size != 0 && large.size != 0) {
-      val less = small.dequeue
-      val more = large.dequeue
+      val less = small.dequeue()
+      val more = large.dequeue()
 
-      probabilities(less) = copiedRawProbabilities(less) * copiedRawProbabilities.size
+      probs(less) = rawprobs(less)
       aliases(less) = more
 
-      copiedRawProbabilities(more) = (copiedRawProbabilities(more) + copiedRawProbabilities(less)) - average
+      rawprobs(more) = (rawprobs(more) + rawprobs(less)) - 1
 
-      if (copiedRawProbabilities(more) >= average) large += more else small += more
+      if (rawprobs(more) >= 1) large += more else small += more
     }
 
-    for (i <- large) probabilities(i) = 1.0
-    for (i <- small) probabilities(i) = 1.0
+    for (i <- large) probs(i) = 1.0
+    for (i <- small) probs(i) = 1.0
 
-    new AliasSampling(probabilities, aliases, random)
+    new AliasMethod(probs, aliases, random) {}
 
   }
 

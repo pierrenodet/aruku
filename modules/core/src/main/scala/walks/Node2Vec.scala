@@ -19,7 +19,7 @@ package aruku.walks
 import aruku._
 import org.apache.spark.graphx.{ Edge, VertexId }
 
-sealed case class Node2Vec private[aruku] (
+final case class Node2Vec private[aruku] (
   previous: VertexId
 )
 
