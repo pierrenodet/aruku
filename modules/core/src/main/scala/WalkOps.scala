@@ -21,7 +21,6 @@ import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
-import scala.util.Random
 
 class WalkOps[VD: ClassTag, ED: ClassTag](graph: Graph[VD, ED]) extends Serializable {
 
