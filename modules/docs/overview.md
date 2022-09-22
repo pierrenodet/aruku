@@ -12,6 +12,10 @@ aruku is a random walk engine for Apache Spark. It's helps you program and model
 To run node2vec on a graph from Apache Spark Graphx :
 
 ```scala
+import aruku._
+import aruku.implicits._
+import aruku.walks._
+
 val graph: Graph[Long, Int] = GraphGenerators
     .logNormalGraph(sc, numVertices = 150000)
 

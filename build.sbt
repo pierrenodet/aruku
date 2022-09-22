@@ -4,39 +4,37 @@ lazy val scalatestVersion  = "3.2.13"
 lazy val scala212Version   = "2.12.15"
 lazy val scala213Version   = "2.13.8"
 
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
+ThisBuild / organization                        := "com.github.pierrenodet"
+ThisBuild / organizationName                    := "Pierre Nodet"
+ThisBuild / homepage                            := Some(url(s"https://github.com/pierrenodet/aruku"))
+ThisBuild / startYear                           := Some(2019)
+ThisBuild / licenses                            := Seq(License.Apache2)
+ThisBuild / developers                          := List(
+  Developer(
+    "pierrenodet",
+    "Pierre Nodet",
+    "nodet.pierre@gmail.com",
+    url("https://github.com/pierrenodet")
+  )
+)
+ThisBuild / scalaVersion                        := scala213Version
+ThisBuild / crossScalaVersions                  := Seq(scala212Version, scala213Version)
+ThisBuild / githubWorkflowJavaVersions          := Seq("8", "11", "17").map(JavaSpec.temurin(_))
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches :=
+  Seq(RefPredicate.StartsWith(Ref.Tag("v")))
+ThisBuild / githubWorkflowPublish               := Seq(
+  WorkflowStep.Sbt(List("ci-release")),
+  WorkflowStep.Sbt(List("docs/docusaurusPublishGhpages"))
+)
+ThisBuild / githubWorkflowBuild                 := Seq(WorkflowStep.Sbt(List("coverage", "test", "coverageReport")))
+ThisBuild / githubWorkflowBuildPostamble        := Seq(WorkflowStep.Run(List("bash <(curl -s https://codecov.io/bash)")))
+ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("public")
+ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+
 lazy val commonSettings = Seq(
-  resolvers ++= Resolver.sonatypeOssRepos("public"),
-  resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
-  organization             := "com.github.pierrenodet",
-  homepage                 := Some(url(s"https://github.com/pierrenodet/aruku")),
-  licenses                 := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-  developers               := List(
-    Developer(
-      "pierrenodet",
-      "Pierre Nodet",
-      "nodet.pierre@gmail.com",
-      url("https://github.com/pierrenodet")
-    )
-  ),
-  headerLicense            := Some(
-    HeaderLicense.Custom(
-      """|Copyright 2019 Pierre Nodet
-         |
-         |Licensed under the Apache License, Version 2.0 (the "License");
-         |you may not use this file except in compliance with the License.
-         |You may obtain a copy of the License at
-         |
-         |    http://www.apache.org/licenses/LICENSE-2.0
-         |
-         |Unless required by applicable law or agreed to in writing, software
-         |distributed under the License is distributed on an "AS IS" BASIS,
-         |WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-         |See the License for the specific language governing permissions and
-         |limitations under the License.""".stripMargin
-    )
-  ),
-  scalaVersion             := scala213Version,
-  crossScalaVersions       := Seq(scala212Version, scala213Version),
   Compile / doc / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc / scalacOptions ++= Seq(
     "-groups",
@@ -70,8 +68,9 @@ lazy val core = project
       "org.apache.spark"  %% "spark-graphx"            % sparkVersion      % Provided,
       "org.scalacheck"    %% "scalacheck"              % scalaCheckVersion % Test,
       "org.scalatest"     %% "scalatest"               % scalatestVersion  % Test,
-      "org.scalatestplus" %% ("scalacheck" + scalaCheckVersion
-        .split(".")
+      "org.scalatestplus" %% ("scalacheck" + "-" + scalaCheckVersion
+        .split("\\.")
+        .toList
         .take(2)
         .mkString("-"))    % (scalatestVersion + ".0") % Test,
       "org.scalatest"     %% "scalatest-funsuite"      % scalatestVersion  % Test

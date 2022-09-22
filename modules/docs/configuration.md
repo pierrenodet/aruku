@@ -65,7 +65,6 @@ object WalkerConfig {
 }
 ```
 
-
 ## Walker Engine Configuration
 
 You can configure the engine itself at the moment with the ```"spark.graphx.pregel.checkpointInterval"``` at the moment in order to break the lineage of the random walk if you are doing a lot of steps.

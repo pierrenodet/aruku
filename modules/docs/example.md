@@ -6,13 +6,12 @@ title: "Example"
 Let's generate a graph with GraphX and run node2vec on it !
 
 ```scala
-import org.apache.spark.graphx.util.GraphGenerators
-import org.apache.spark.graphx._
-import org.apache.spark._
-
-import aruku.walks._
 import aruku._
+import aruku.walks._
 import aruku.implicits._
+import org.apache.spark._
+import org.apache.spark.graphx._
+import org.apache.spark.graphx.util.GraphGenerators
 
 object Main extends App {
 
