@@ -82,7 +82,7 @@ object RandomWalk {
           iter.flatMap { vid =>
             walkerConfigLocal.start match {
               case AtRandom(probability)  =>
-                if ((new Random()).nextDouble() < probability) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid)))
+                if (Random.nextDouble() < probability) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid)))
                 else None
               case FromVertices(vertices) =>
                 if (vertices.contains(vid)) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid))) else None
@@ -187,7 +187,7 @@ object RandomWalk {
                 message = transition.message(walker, vid, neighbors)
                 doneLocally = !LocalGraphPartition.data.contains(nvid)
                 vid = nvid
-                done = !((new Random()).nextDouble() < transition.extension(walker, vid))
+                done = !(Random.nextDouble() < transition.extension(walker, vid))
             }
           }
           (vid, WalkerState(walker, path, message, done))

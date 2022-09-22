@@ -50,17 +50,17 @@ object Node2Vec {
         msg match {
           case Some(previousNeighbors) =>
             val dst = next.dstId
-            if (previousNeighbors.contains(dst)) {
-              1
-            } else if (dst == walker.data.previous) {
-              1 / p
+            if (dst == walker.data.previous) {
+              1.0
+            } else if (previousNeighbors.contains(dst)) {
+              1.0 / p
             } else {
-              1 / q
+              1.0 / q
             }
           case None                    => 1.0
         },
-      (_: VertexId, _: Array[Edge[Double]]) => math.max(1 / p, math.max(1, 1 / q)),
-      (_: VertexId, _: Array[Edge[Double]]) => math.min(1 / p, math.min(1, 1 / q))
+      (_: VertexId, _: Array[Edge[Double]]) => math.max(1.0 / p, math.max(1.0, 1.0 / q)),
+      (_: VertexId, _: Array[Edge[Double]]) => math.min(1.0 / p, math.min(1.0, 1.0 / q))
     )
 
 }

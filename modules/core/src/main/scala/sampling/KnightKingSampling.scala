@@ -32,7 +32,7 @@ final case class KnightKingSampling[T, M] private[aruku] (
 
   def sample(current: VertexId, neighbors: Array[Edge[Double]], message: Option[M], alias: AliasMethod): Int = {
 
-    val f  = (id: Int) => dynamic(current, neighbors(id), message)
+    val f  = (i: Int) => dynamic(current, neighbors(i), message)
     val ub = upperBound(current, neighbors)
     val lb = lowerBound(current, neighbors)
 
