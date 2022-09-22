@@ -94,3 +94,13 @@ lazy val docs = project
     docusaurusPublishGhpages                   := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value,
     githubWorkflowArtifactUpload               := false
   )
+
+lazy val benchmarks = project
+  .in(file("modules/benchmarks"))
+  .dependsOn(core)
+  .settings(
+    publish / skip               := true,
+    githubWorkflowArtifactUpload := false,
+    name                         := "aruku-benchmarks"
+  )
+  .enablePlugins(JmhPlugin)
