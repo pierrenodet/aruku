@@ -55,6 +55,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
         .set("spark.graphx.pregel.checkpointInterval", "1")
     )
     sc.setCheckpointDir("checkpoint")
+    sc.setLogLevel("ERROR")
 
   }
 
@@ -117,7 +118,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
         (aloneVertice, 1.0 / q)
       )
       val sumProba = proba.values.sum
-      val distrib  = proba.view.mapValues(_ / sumProba).toMap
+      val distrib  = proba.map { case (k, v) => (k, v / sumProba) }
 
       val precision = 5e-2
       assert(estimate(previousVertice) === distrib(previousVertice) +- precision)

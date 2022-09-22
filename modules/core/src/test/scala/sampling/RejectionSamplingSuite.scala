@@ -48,7 +48,8 @@ class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks 
 
       val n = 10000
 
-      val occurences = List.fill(n)(rs.sample()).groupMapReduce(identity)(_ => 1.0 / n)(_ + _)
+      val samples    = List.fill(n)(rs.sample())
+      val occurences = samples.groupBy(identity).map { case (i, o) => (i, o.size.toDouble / n) }
       val max        = occurences.values.max
       val res        = domain.map(i => (i, occurences.getOrElse(i, 0d) / max))
 
@@ -68,9 +69,8 @@ class RejectionSampling2Suite extends AnyFunSuite with ScalaCheckPropertyChecks 
       val n = 1000
 
       val samples    = List.fill(n)(rs.sample())
-      val occurences = samples.groupMapReduce(identity)(_ => 1.0 / n)(_ + _)
-
-      val precision = 1e-1
+      val occurences = samples.groupBy(identity).map { case (i, o) => (i, o.size.toDouble / n) }
+      val precision  = 1e-1
 
       assert(occurences.values.forall(o => o === (1d / domain.size) +- precision))
     }

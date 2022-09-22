@@ -43,7 +43,7 @@ class AliasMethodSuite extends AnyFunSuite with ScalaCheckPropertyChecks {
       var reconstructed = alias.probs.zipWithIndex.map(_.swap).toMap
 
       comp.zipWithIndex.foreach { case (c, i) =>
-        reconstructed = reconstructed.updatedWith(alias.aliases(i))(_.map(_ + c))
+        reconstructed = reconstructed.updated(alias.aliases(i), reconstructed.getOrElse(alias.aliases(i), 0d) + c)
       }
 
       val sumReconstructed        = reconstructed.values.sum
@@ -66,7 +66,7 @@ class AliasMethodSuite extends AnyFunSuite with ScalaCheckPropertyChecks {
 
       val size     = 100000
       val sampled  = List.fill(size)(alias.next())
-      val bincount = sampled.groupMapReduce(identity)(_ => 1.0 / size)(_ + _)
+      val bincount = sampled.groupBy(identity).map { case (i, o) => (i, o.size.toDouble / size) }
       val res      = probs.indices.map(bincount.getOrElse(_, 0d)).toList
 
       val precision = 1e-2
