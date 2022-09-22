@@ -18,6 +18,8 @@ package aruku
 
 import aruku._
 import aruku.implicits._
+import aruku.partition.LocalData
+import aruku.partition.LocalGraphPartition
 import aruku.walks._
 import org.apache.spark.HashPartitioner
 import org.apache.spark.SparkConf
@@ -29,14 +31,14 @@ import org.apache.spark.graphx.Graph
 import org.apache.spark.graphx.VertexId
 import org.apache.spark.graphx.util.GraphGenerators
 import org.apache.spark.rdd.RDD
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
-import org.scalacheck.Gen
-import org.scalacheck.Shrink
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.language.postfixOps
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckPropertyChecks {
 
@@ -62,7 +64,6 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
 
   test("node2vec dynamic transition is respected") {
 
-    // Replace by GraphGenerators.starGraph
     val previousVertice     = 1L
     val starVertice         = 2L
     val prevNeighborVertice = 3L
@@ -74,7 +75,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
         Edge(previousVertice, starVertice, 1.0)
       )
 
-    val parallelism = 16
+    val parallelism = 2
     val graph       = Graph(sc.makeRDD(vertices, parallelism), sc.makeRDD(edges))
 
     val numWalkers = 10000
@@ -130,7 +131,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
 
     // Generate Graph
     val numVertices             = 1000
-    val parallelism             = 4
+    val parallelism             = 2
     val graph: Graph[Long, Int] =
       GraphGenerators
         .logNormalGraph(sc, numVertices = numVertices, numEParts = parallelism)
@@ -138,17 +139,16 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
     val gen = Gen.chooseNum(0.1, 0.9)
 
     forAll(gen) { pi =>
-      val numWalkers = 100000
+      val numWalkers = 50000
       val numEpochs  = 1
 
       val paths: RDD[(Long, Array[VertexId])] = graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Either)(
         PersonalizedPageRank.config(numWalkers, numEpochs),
         PersonalizedPageRank.transition(pi)
       )
+      val numPaths                            = paths.count()
 
-      val precision = 5e-2
-
-      val numPaths = paths.count()
+      val precision = 1e-1
 
       assert(numPaths == numWalkers)
       assert(paths.filter(_._2.isEmpty).count() == 0)
@@ -162,7 +162,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
 
     // Generate Graph
     val numVertices             = 1000
-    val parallelism             = 1
+    val parallelism             = 2
     val graph: Graph[Long, Int] =
       GraphGenerators
         .logNormalGraph(sc, numVertices = numVertices, numEParts = parallelism)
@@ -183,6 +183,64 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
         .collect()
         .forall(path => path.toList.sliding(2).collect { case head :: next => head != next.head }.forall(identity))
     )
+
+  }
+
+  test("walker config with FromVertices strategy generates walkers in chosen vertices only") {
+
+    // Generate Graph
+    val numVertices             = 100
+    val parallelism             = 2
+    val graph: Graph[Long, Int] =
+      GraphGenerators
+        .logNormalGraph(sc, numVertices = numVertices, numEParts = parallelism)
+
+    val numWalkers     = numVertices * 2
+    val chosenVertices = graph.vertices.keys.take(10)
+    val walkLength     = 10
+
+    val paths: RDD[(Long, Array[VertexId])] =
+      graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
+        WalkerConfig.constant(numWalkers, 1, 1, _ => DeepWalk, FromVertices(chosenVertices)),
+        DeepWalk.transition(walkLength)
+      )
+
+    assert(
+      paths
+        .map(_._2.head)
+        .collect()
+        .forall(chosenVertices.contains)
+    )
+
+  }
+
+  test("proper data cleanup after random walk is finished") {
+
+    // Clean previous persisted RDDs
+    sc.getPersistentRDDs.values.foreach(_.unpersist())
+
+    // Generate Graph
+    val numVertices             = 100
+    val parallelism             = 2
+    val graph: Graph[Long, Int] =
+      GraphGenerators
+        .logNormalGraph(sc, numVertices = numVertices, numEParts = parallelism)
+    // GraphGenerators automatically persist graphs
+    graph.unpersist()
+
+    val numWalkers = numVertices * 2
+    val walkLength = 10
+
+    val paths: RDD[(Long, Array[VertexId])] =
+      graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)(
+        DeepWalk.config(numWalkers),
+        DeepWalk.transition(walkLength)
+      )
+    // Computed paths are automatically persisted
+    paths.unpersist()
+
+    assert(LocalGraphPartition.data.isEmpty)
+    assert(sc.getPersistentRDDs.isEmpty)
 
   }
 

@@ -83,7 +83,7 @@ object RandomWalk {
           iter.flatMap { vid =>
             walkerConfigLocal.start match {
               case AtRandom(probability)  =>
-                if (Random.nextDouble() < probability) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid)))
+                if ((new Random()).nextDouble() < probability) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid)))
                 else None
               case FromVertices(vertices) =>
                 if (vertices.contains(vid)) Some(vid, Walker[T](0, 0, walkerConfigLocal.init(vid))) else None
@@ -281,6 +281,7 @@ object RandomWalk {
 
       // Cleaning Data
       walkerCheckpointer.deleteAllCheckpoints()
+      walkerCheckpointer.unpersistDataSet()
       accCompleteWalkers.foreach { rdd =>
         rdd.getCheckpointFile.foreach(RDDCheckpointer.removeCheckpointFile(_, sc.hadoopConfiguration))
         rdd.unpersist()
