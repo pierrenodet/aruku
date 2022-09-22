@@ -21,7 +21,7 @@ ThisBuild / developers                          := List(
 )
 ThisBuild / scalaVersion                        := scala213Version
 ThisBuild / crossScalaVersions                  := Seq(scala212Version, scala213Version)
-ThisBuild / githubWorkflowJavaVersions          := Seq("8", "11", "17").map(JavaSpec.temurin(_))
+ThisBuild / githubWorkflowJavaVersions          := Seq("8", "11").map(JavaSpec.temurin(_))
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
   Seq(RefPredicate.StartsWith(Ref.Tag("v")))
