@@ -27,7 +27,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
 import java.util.concurrent.Executors
-import scala.collection.immutable.ArraySeq
 import scala.concurrent._
 import scala.reflect.ClassTag
 import scala.util.Random
@@ -273,7 +272,7 @@ object RandomWalk {
       }
 
       val fullCompleteWalkers =
-        sc.union(ArraySeq.unsafeWrapArray(accCompleteWalkers))
+        sc.union(accCompleteWalkers)
           .partitionBy(partitioner)
           .cache()
 
@@ -299,7 +298,7 @@ object RandomWalk {
     routingTable.unpersist()
 
     val res = sc
-      .union(ArraySeq.unsafeWrapArray(accFullCompleteWalkers))
+      .union(accFullCompleteWalkers)
       .partitionBy(partitioner)
       .cache()
 
