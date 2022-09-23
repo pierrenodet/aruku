@@ -83,30 +83,29 @@ object DynamicWalk {
  def transition(p: Double, q: Double, walkLength: Long) =
 
     Transition.secondOrder(
-      (walker: Walker[DynamicWalk], _: VertexId) => 
-        if (walker.step < walkLength) 1.0 else 0.0,
-      (vid: VertexId, edge: Edge[Double]) => edge.attr,
-      (walker: Walker[DynamicWalk], _: VertexId, edges: Array[Edge[Double]]) => 
-        Some(edges.map(_.dstId)),
+      (walker: Walker[Node2Vec], _: VertexId) => if (walker.step < walkLength) 1.0 else 0.0,
+      (_: VertexId, edge: Edge[Double]) => edge.attr,
+      (walker: Walker[Node2Vec], _: VertexId, edges: Array[Edge[Double]]) => Some(edges),
       (
-        walker: Walker[DynamicWalk],
+        walker: Walker[Node2Vec],
         current: VertexId,
         next: Edge[Double],
-        msg: Option[Array[VertexId]]
+        msg: Option[Array[Edge[Double]]]
       ) =>
         msg match {
           case Some(previousNeighbors) =>
-            if (previousNeighbors.contains(next)) {
-              1
-            } else if (next == walker.data.previous) {
-              1 / p
+            val dst = next.dstId
+            if (dst == walker.data.previous) {
+              1.0 / p
+            } else if (previousNeighbors.exists(_.dstId == dst)) {
+              1.0
             } else {
-              1 / q
+              1.0 / q
             }
-          case None => 1.0
+          case None                    => 1.0
         },
-      (_: VertexId, _: Array[Edge[Double]]) => math.max(1 / p, math.max(1, 1 / q)),
-      (_: VertexId, _: Array[Edge[Double]]) => math.min(1 / p, math.min(1, 1 / q))
+      (_: VertexId, _: Array[Edge[Double]]) => math.max(1.0 / p, math.max(1.0, 1.0 / q)),
+      (_: VertexId, _: Array[Edge[Double]]) => math.min(1.0 / p, math.min(1.0, 1.0 / q))
     )
 
 }

@@ -44,6 +44,7 @@ ThisBuild / githubWorkflowBuild          := Seq(WorkflowStep.Sbt(List("coverage"
 ThisBuild / githubWorkflowBuildPostamble := Seq(WorkflowStep.Run(List("bash <(curl -s https://codecov.io/bash)")))
 ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("public")
 ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+ThisBuild / versionScheme := Some("semver-spec")
 
 lazy val commonSettings = Seq(
   Compile / doc / scalacOptions --= Seq("-Xfatal-warnings"),
