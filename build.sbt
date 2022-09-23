@@ -6,12 +6,12 @@ lazy val scala213Version   = "2.13.8"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / organization                        := "com.github.pierrenodet"
-ThisBuild / organizationName                    := "Pierre Nodet"
-ThisBuild / homepage                            := Some(url(s"https://github.com/pierrenodet/aruku"))
-ThisBuild / startYear                           := Some(2019)
-ThisBuild / licenses                            := Seq(License.Apache2)
-ThisBuild / developers                          := List(
+ThisBuild / organization                 := "com.github.pierrenodet"
+ThisBuild / organizationName             := "Pierre Nodet"
+ThisBuild / homepage                     := Some(url(s"https://github.com/pierrenodet/aruku"))
+ThisBuild / startYear                    := Some(2019)
+ThisBuild / licenses                     := Seq(License.Apache2)
+ThisBuild / developers                   := List(
   Developer(
     "pierrenodet",
     "Pierre Nodet",
@@ -19,18 +19,18 @@ ThisBuild / developers                          := List(
     url("https://github.com/pierrenodet")
   )
 )
-ThisBuild / scalaVersion                        := scala213Version
-ThisBuild / crossScalaVersions                  := Seq(scala212Version, scala213Version)
-ThisBuild / githubWorkflowJavaVersions          := Seq("8", "11").map(JavaSpec.temurin(_))
+ThisBuild / scalaVersion                 := scala213Version
+ThisBuild / crossScalaVersions           := Seq(scala212Version, scala213Version)
+ThisBuild / githubWorkflowJavaVersions   := Seq("8", "11").map(JavaSpec.temurin(_))
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
-ThisBuild / githubWorkflowPublishTargetBranches :=
-  Seq(RefPredicate.StartsWith(Ref.Tag("v")))
-ThisBuild / githubWorkflowPublish               := Seq(
+ThisBuild / githubWorkflowPublishTargetBranches +=
+  RefPredicate.StartsWith(Ref.Tag("v"))
+ThisBuild / githubWorkflowPublish        := Seq(
   WorkflowStep.Sbt(List("ci-release")),
   WorkflowStep.Sbt(List("docs/docusaurusPublishGhpages"))
 )
-ThisBuild / githubWorkflowBuild                 := Seq(WorkflowStep.Sbt(List("coverage", "test", "coverageReport")))
-ThisBuild / githubWorkflowBuildPostamble        := Seq(WorkflowStep.Run(List("bash <(curl -s https://codecov.io/bash)")))
+ThisBuild / githubWorkflowBuild          := Seq(WorkflowStep.Sbt(List("coverage", "test", "coverageReport")))
+ThisBuild / githubWorkflowBuildPostamble := Seq(WorkflowStep.Run(List("bash <(curl -s https://codecov.io/bash)")))
 ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("public")
 ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots")
 
