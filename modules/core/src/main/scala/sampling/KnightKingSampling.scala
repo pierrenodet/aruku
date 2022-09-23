@@ -23,11 +23,10 @@ import org.apache.spark.graphx.VertexId
 import scala.collection.mutable.Queue
 import scala.util.Random
 
-final case class KnightKingSampling[T, M] private[aruku] (
+final case class KnightKingSampling[M] private[aruku] (
   dynamic: (VertexId, Edge[Double], Option[M]) => Double,
   upperBound: (VertexId, Array[Edge[Double]]) => Double,
-  lowerBound: (VertexId, Array[Edge[Double]]) => Double,
-  random: Random = new Random
+  lowerBound: (VertexId, Array[Edge[Double]]) => Double
 ) {
 
   def sample(current: VertexId, neighbors: Array[Edge[Double]], message: Option[M], alias: AliasMethod): Int = {
@@ -36,20 +35,20 @@ final case class KnightKingSampling[T, M] private[aruku] (
     val ub = upperBound(current, neighbors)
     val lb = lowerBound(current, neighbors)
 
-    RejectionSampling.fromPrior(alias.next)(f, ub, lb, random).sample()
+    RejectionSampling.fromPrior(alias.next)(f, ub, lb).sample()
   }
 
 }
 
 object KnightKingSampling {
 
-  def fromWalkerTransition[T, M](walker: Walker[T], transition: Transition[T, M], random: Random = new Random) = {
+  def fromWalkerTransition[T, M](walker: Walker[T], transition: Transition[T, M]) = {
 
-    val dynamic    = Function.uncurried(transition.dynamic.curried.apply(walker))
+    val dynamic    = (vid: VertexId, e: Edge[Double], m: Option[M]) => transition.dynamic(walker, vid, e, m)
     val upperBound = transition.upperBound
     val lowerBound = transition.lowerBound
 
-    new KnightKingSampling(dynamic, upperBound, lowerBound, random)
+    new KnightKingSampling(dynamic, upperBound, lowerBound)
 
   }
 

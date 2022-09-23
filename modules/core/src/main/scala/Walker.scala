@@ -16,7 +16,7 @@
 
 package aruku
 
-final case class Walker[T] private[aruku] (
+final case class Walker[@specialized(Long) T] private[aruku] (
   id: Long,
   step: Long,
   data: T

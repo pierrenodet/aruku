@@ -21,8 +21,8 @@ import org.apache.spark.graphx.Edge
 import org.apache.spark.graphx.VertexId
 
 final case class Node2Vec private[aruku] (
-  previous: VertexId
-)
+  val previous: VertexId
+) extends AnyVal
 
 object Node2Vec {
 
@@ -40,20 +40,20 @@ object Node2Vec {
     Transition.secondOrder(
       (walker: Walker[Node2Vec], _: VertexId) => if (walker.step < walkLength) 1.0 else 0.0,
       (_: VertexId, edge: Edge[Double]) => edge.attr,
-      (walker: Walker[Node2Vec], _: VertexId, edges: Array[Edge[Double]]) => Some(edges.map(_.dstId)),
+      (walker: Walker[Node2Vec], _: VertexId, edges: Array[Edge[Double]]) => Some(edges),
       (
         walker: Walker[Node2Vec],
         current: VertexId,
         next: Edge[Double],
-        msg: Option[Array[VertexId]]
+        msg: Option[Array[Edge[Double]]]
       ) =>
         msg match {
           case Some(previousNeighbors) =>
             val dst = next.dstId
             if (dst == walker.data.previous) {
-              1.0
-            } else if (previousNeighbors.contains(dst)) {
               1.0 / p
+            } else if (previousNeighbors.exists(_.dstId == dst)) {
+              1.0
             } else {
               1.0 / q
             }

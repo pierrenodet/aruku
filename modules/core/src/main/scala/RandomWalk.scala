@@ -52,10 +52,13 @@ object RandomWalk {
       .mapPartitionsWithIndex(
         { (_, iter) =>
           val static = transitionBC.value.static
-          LocalGraphPartition.data ++= iter.map { case (vid, data) =>
-            val probabilities = data.map(edge => static(vid, edge))
+          LocalGraphPartition.data ++= iter.map { case (vid, edges) =>
+            val n             = edges.size
+            val probabilities = Array.ofDim[Double](n)
+            var i             = 0
+            while (i < n) { probabilities(i) = static(vid, edges(i)); i += 1 }
             val aliases       = AliasMethod.fromRawProbabilities(probabilities)
-            (vid, LocalData(data, aliases))
+            (vid, LocalData(edges, aliases))
           }
           Iterator.empty
         },

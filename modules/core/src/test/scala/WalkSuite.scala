@@ -77,9 +77,9 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
       )
 
     val parallelism = 2
-    val graph       = Graph(sc.makeRDD(vertices, parallelism), sc.makeRDD(edges))
+    val graph       = Graph(sc.makeRDD(vertices, parallelism), sc.makeRDD(edges)).cache()
 
-    val numWalkers = 10000
+    val numWalkers = 50000
     val numEpochs  = 1
     val walkLength = 3
 
@@ -120,12 +120,15 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
       val sumProba = proba.values.sum
       val distrib  = proba.map { case (k, v) => (k, v / sumProba) }
 
-      val precision = 5e-2
+      val precision = 1e-2
       assert(estimate(previousVertice) === distrib(previousVertice) +- precision)
       assert(estimate.getOrElse(starVertice, 0.0) === distrib(starVertice) +- precision)
       assert(estimate(prevNeighborVertice) === distrib(prevNeighborVertice) +- precision)
       assert(estimate(aloneVertice) === distrib(aloneVertice) +- precision)
     }
+
+    graph.unpersist()
+
   }
 
   test("personalized page rank stochastic length") {
@@ -140,7 +143,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
     val gen = Gen.chooseNum(0.1, 0.9)
 
     forAll(gen) { pi =>
-      val numWalkers = 50000
+      val numWalkers = 100000
       val numEpochs  = 1
 
       val paths: RDD[(Long, Array[VertexId])] = graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Either)(
@@ -149,12 +152,10 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
       )
       val numPaths                            = paths.count()
 
-      val precision = 1e-1
-
       assert(numPaths == numWalkers)
       assert(paths.filter(_._2.isEmpty).count() == 0)
-      assert(paths.filter(_._2.size == 1).count().toDouble / numPaths === (1 - pi) +- precision)
-      assert(paths.map(_._2.size).sum() / numPaths === 1 + (pi / (1 - pi)) +- precision)
+      assert(paths.filter(_._2.size == 1).count().toDouble / numPaths === (1 - pi) +- 1e-2)
+      assert(paths.map(_._2.size).sum() / numPaths === 1 + (pi / (1 - pi)) +- 1e-1)
     }
 
   }
