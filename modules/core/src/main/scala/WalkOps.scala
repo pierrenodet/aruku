@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,23 @@
 
 package aruku
 
-import scala.reflect.ClassTag
+import org.apache.spark.HashPartitioner
 import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.HashPartitioner
+
+import scala.reflect.ClassTag
 
 class WalkOps[VD: ClassTag, ED: ClassTag](graph: Graph[VD, ED]) extends Serializable {
 
   def randomWalk[T, M](preprocess: Edge[ED] => Double, edgeDirection: EdgeDirection = EdgeDirection.Out)(
     walkerConfig: WalkerConfig[T],
     transition: Transition[T, M]
-  ): RDD[(VertexId, Array[VertexId])] =
-    WalkEngine
-      .fromPartitioner(graph.vertices.partitioner.getOrElse(new HashPartitioner(graph.vertices.partitions.size)))
-      .randomWalk(graph.mapEdges(edge => preprocess(edge)).collectEdges(edgeDirection), walkerConfig, transition)
+  ): RDD[(Long, Array[VertexId])] =
+    RandomWalk.run(edgeDirection)(
+      graph.mapEdges(preprocess),
+      walkerConfig,
+      transition
+    )
 
 }
 

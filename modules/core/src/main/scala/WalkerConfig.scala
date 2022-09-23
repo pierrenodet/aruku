@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package aruku
 
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
+
 import scala.util.Random
-import org.apache.spark.graphx.{ Edge, VertexId }
 
 final case class WalkerConfig[T] private[aruku] (
   numWalkers: Long,
@@ -29,11 +31,11 @@ final case class WalkerConfig[T] private[aruku] (
 )
 
 sealed trait StartingStrategy
-final case class AtRandom(probability: Double, random: Random = new Random) extends StartingStrategy
-final case class FromVertices(vertices: Array[VertexId])                    extends StartingStrategy
+final case class AtRandom(probability: Double)           extends StartingStrategy
+final case class FromVertices(vertices: Array[VertexId]) extends StartingStrategy
 
 object WalkerConfig {
-  def dynamic[T](
+  def updating[T](
     numWalkers: Long,
     numEpochs: Int,
     parallelism: Int,

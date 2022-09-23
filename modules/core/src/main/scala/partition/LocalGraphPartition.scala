@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 package aruku.partition
 
-import scala.collection.concurrent.TrieMap
-import org.apache.spark.graphx.{ Edge, VertexId }
-import scala.collection.mutable.ArrayBuffer
+import aruku.sampling.AliasMethod
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
 import org.apache.spark.rdd.RDD
-import aruku.sampling.AliasSampling
+
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable.ArrayBuffer
 
 object LocalGraphPartition {
 
@@ -29,4 +31,4 @@ object LocalGraphPartition {
 }
 
 //Could be nice to have something parametric to the edge type
-case class LocalData(neighbors: Array[Edge[Double]], aliasMethods: AliasSampling)
+case class LocalData(neighbors: Array[Edge[Double]], aliasMethods: AliasMethod)

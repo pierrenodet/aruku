@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package aruku
 
-final case class Walker[T] private[aruku] (
+final case class Walker[@specialized(Long) T] private[aruku] (
   id: Long,
   step: Long,
   data: T

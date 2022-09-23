@@ -6,13 +6,12 @@ title: "Example"
 Let's generate a graph with GraphX and run node2vec on it !
 
 ```scala
-import org.apache.spark.graphx.util.GraphGenerators
-import org.apache.spark.graphx._
-import org.apache.spark._
-
-import aruku.walks._
 import aruku._
+import aruku.walks._
 import aruku.implicits._
+import org.apache.spark._
+import org.apache.spark.graphx._
+import org.apache.spark.graphx.util.GraphGenerators
 
 object Main extends App {
 
@@ -39,7 +38,7 @@ object Main extends App {
 
     //Execute Random Walk
     val paths =
-      graph.randomWalk(edge => edge.attr.toDouble, EdgeDirection.Out)
+      graph.randomWalk(edge => edge.attr.toDouble)
     (Node2Vec.config(numWalkers), Node2Vec.transition(p, q, walkLength))
 
     //Print 10 first Random Walks
@@ -48,5 +47,4 @@ object Main extends App {
     }
 
 }
-
 ```

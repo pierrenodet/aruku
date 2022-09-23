@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 package aruku.walks
 
 import aruku._
-import org.apache.spark.graphx.{ Edge, VertexId }
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
 
 case object DeepWalk {
 
@@ -26,14 +27,14 @@ case object DeepWalk {
       numWalkers,
       numEpochs,
       parallelism,
-      (current: VertexId) => DeepWalk,
+      (_: VertexId) => DeepWalk,
       AtRandom(1.0)
     )
 
   def transition(walkLength: Long) =
     Transition.static(
       (walker: Walker[DeepWalk.type], _: VertexId) => if (walker.step < walkLength) 1.0 else 0.0,
-      (vid: VertexId, edge: Edge[Double]) => edge.attr
+      (_: VertexId, edge: Edge[Double]) => edge.attr
     )
 
 }

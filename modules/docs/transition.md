@@ -24,8 +24,8 @@ It's the simplest random walk possible as it doesn't follow any kind of edge com
 For example let's create a random walk that stop after ```walkLength``` steps :
 
 ```scala
-import org.apache.spark.graphx.{ Edge, VertexId }
 import aruku._
+import org.apache.spark.graphx.{ Edge, VertexId }
 
 case object ObliviousWalk {
 
@@ -47,8 +47,8 @@ It's a more realistic component as often seen a real world graph, the edge compo
 Let's add a static componenent to our previous oblivous walk :
 
 ```scala
-import org.apache.spark.graphx.{ Edge, VertexId }
 import aruku._
+import org.apache.spark.graphx.{ Edge, VertexId }
 
 case object StaticWalk {
 
@@ -73,8 +73,8 @@ For more elaborate random walk, the walker is gonna decide to jump to the next n
 If we wanted to make node2vec, the transition probability would look like this :
 
 ```scala
-import org.apache.spark.graphx.{ Edge, VertexId }
 import aruku._
+import org.apache.spark.graphx.{ Edge, VertexId }
 
 case class DynamicWalk(previous: VertexId)
 

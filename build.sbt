@@ -1,50 +1,50 @@
-lazy val sparkVersion      = "2.4.5"
-lazy val scalaCheckVersion = "1.14.0"
-lazy val scalatestVersion  = "3.0.8"
-lazy val scala211Version   = "2.11.12"
-lazy val scala212Version   = "2.12.10"
+lazy val sparkVersion      = "3.2.2"
+lazy val scalaCheckVersion = "1.16.0"
+lazy val scalatestVersion  = "3.2.13"
+lazy val scala212Version   = "2.12.15"
+lazy val scala213Version   = "2.13.8"
+
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
+ThisBuild / organization                        := "com.github.pierrenodet"
+ThisBuild / organizationName                    := "Pierre Nodet"
+ThisBuild / homepage                            := Some(url(s"https://github.com/pierrenodet/aruku"))
+ThisBuild / startYear                           := Some(2019)
+ThisBuild / licenses                            := Seq(License.Apache2)
+ThisBuild / developers                          := List(
+  Developer(
+    "pierrenodet",
+    "Pierre Nodet",
+    "nodet.pierre@gmail.com",
+    url("https://github.com/pierrenodet")
+  )
+)
+ThisBuild / scalaVersion                        := scala213Version
+ThisBuild / crossScalaVersions                  := Seq(scala212Version, scala213Version)
+ThisBuild / githubWorkflowJavaVersions          := Seq("8", "11").map(JavaSpec.temurin(_))
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches :=
+  Seq(RefPredicate.StartsWith(Ref.Tag("v")))
+ThisBuild / githubWorkflowPublish               := Seq(
+  WorkflowStep.Sbt(List("ci-release")),
+  WorkflowStep.Sbt(List("docs/docusaurusPublishGhpages"))
+)
+ThisBuild / githubWorkflowBuild                 := Seq(WorkflowStep.Sbt(List("coverage", "test", "coverageReport")))
+ThisBuild / githubWorkflowBuildPostamble        := Seq(WorkflowStep.Run(List("bash <(curl -s https://codecov.io/bash)")))
+ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("public")
+ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots")
 
 lazy val commonSettings = Seq(
-  resolvers += Resolver.sonatypeRepo("public"),
-  resolvers += Resolver.sonatypeRepo("snapshots"),
-  organization := "com.github.pierrenodet",
-  homepage := Some(url(s"https://github.com/pierrenodet/aruku")),
-  licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-  developers := List(
-    Developer(
-      "pierrenodet",
-      "Pierre Nodet",
-      "nodet.pierre@gmail.com",
-      url("https://github.com/pierrenodet")
-    )
-  ),
-  headerLicense := Some(
-    HeaderLicense.Custom(
-      """|Copyright 2020 Pierre Nodet
-         |
-         |Licensed under the Apache License, Version 2.0 (the "License");
-         |you may not use this file except in compliance with the License.
-         |You may obtain a copy of the License at
-         |
-         |    http://www.apache.org/licenses/LICENSE-2.0
-         |
-         |Unless required by applicable law or agreed to in writing, software
-         |distributed under the License is distributed on an "AS IS" BASIS,
-         |WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-         |See the License for the specific language governing permissions and
-         |limitations under the License.""".stripMargin
-    )
-  ),
-  scalaVersion := scala211Version,
-  crossScalaVersions := Seq(scala212Version, scala211Version),
   Compile / doc / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc / scalacOptions ++= Seq(
     "-groups",
     "-sourcepath",
-    (baseDirectory in LocalRootProject).value.getAbsolutePath,
+    (LocalRootProject / baseDirectory).value.getAbsolutePath,
     "-doc-source-url",
     "https://github.com/pierrenodet/aruku/blob/v" + version.value + "€{FILE_PATH}.scala"
-  )
+  ),
+  Test / run / fork        := true,
+  Test / parallelExecution := false
 )
 
 lazy val aruku = project
@@ -61,13 +61,19 @@ lazy val core = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    name := "aruku-core",
+    name        := "aruku-core",
     description := "A Random Walk Engine for Apache Spark",
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core"   % sparkVersion      % Provided,
-      "org.apache.spark" %% "spark-graphx" % sparkVersion      % Provided,
-      "org.scalacheck"   %% "scalacheck"   % scalaCheckVersion % Test,
-      "org.scalatest"    %% "scalatest"    % scalatestVersion  % Test
+      "org.apache.spark"  %% "spark-core"              % sparkVersion      % Provided,
+      "org.apache.spark"  %% "spark-graphx"            % sparkVersion      % Provided,
+      "org.scalacheck"    %% "scalacheck"              % scalaCheckVersion % Test,
+      "org.scalatest"     %% "scalatest"               % scalatestVersion  % Test,
+      "org.scalatestplus" %% ("scalacheck" + "-" + scalaCheckVersion
+        .split("\\.")
+        .toList
+        .take(2)
+        .mkString("-"))    % (scalatestVersion + ".0") % Test,
+      "org.scalatest"     %% "scalatest-funsuite"      % scalatestVersion  % Test
     )
   )
 
@@ -77,13 +83,24 @@ lazy val docs = project
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
   .settings(commonSettings)
   .settings(
-    moduleName := "aruku-docs",
-    skip in publish := true,
-    mdocVariables := Map("VERSION" -> version.value.takeWhile(_ != '+')),
-    mdocIn := new File("modules/docs"),
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(core),
-    target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
-    cleanFiles += (target in (ScalaUnidoc, unidoc)).value,
-    docusaurusCreateSite := docusaurusCreateSite.dependsOn(unidoc in Compile).value,
-    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(unidoc in Compile).value
+    moduleName                                 := "aruku-docs",
+    publish / skip                             := true,
+    mdocVariables                              := Map("VERSION" -> version.value.takeWhile(_ != '+')),
+    mdocIn                                     := new File("modules/docs"),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core),
+    ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
+    cleanFiles += (ScalaUnidoc / unidoc / target).value,
+    docusaurusCreateSite                       := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
+    docusaurusPublishGhpages                   := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value,
+    githubWorkflowArtifactUpload               := false
   )
+
+lazy val benchmarks = project
+  .in(file("modules/benchmarks"))
+  .dependsOn(core)
+  .settings(
+    publish / skip               := true,
+    githubWorkflowArtifactUpload := false,
+    name                         := "aruku-benchmarks"
+  )
+  .enablePlugins(JmhPlugin)

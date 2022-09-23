@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package aruku.walks
 
 import aruku._
-
-import org.apache.spark.graphx.{ Edge, VertexId }
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
 
 case object PersonalizedPageRank {
 
@@ -27,14 +27,14 @@ case object PersonalizedPageRank {
       numWalkers,
       numEpochs,
       parallelism,
-      (current: VertexId) => PersonalizedPageRank,
+      (_: VertexId) => PersonalizedPageRank,
       AtRandom(1.0)
     )
 
   def transition(pi: Double) =
     Transition.static(
-      (walker: Walker[PersonalizedPageRank.type], _: VertexId) => pi,
-      (vid: VertexId, edge: Edge[Double]) => edge.attr
+      (_: Walker[PersonalizedPageRank.type], _: VertexId) => pi,
+      (_: VertexId, edge: Edge[Double]) => edge.attr
     )
 
 }

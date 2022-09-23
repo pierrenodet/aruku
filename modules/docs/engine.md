@@ -27,7 +27,7 @@ To get the fault tolerance back, instead of just repartitioning our RDD of walke
 
 Another difficult part of implementing efficient higher order random walks for big graphs is having an efficient edge sampling. Indeed if the alias sampling works well to precompute sampling for the transition probabilities, it's only suited for static walks. For dynamic walks the number of possiblities is too huge to precompute thus having clever algorithm is required.
 
-KnightKing [[github](#https://github.com/KnightKingWalk/KnightKing)] is a general-purpose, distributed graph random walk engine that proposed a number of optimizations to random walks. One of them is an optimized rejection sampling in order to do edge sampling efficiently.
+KnightKing [[github](https://github.com/KnightKingWalk/KnightKing)] is a general-purpose, distributed graph random walk engine that proposed a number of optimizations to random walks. One of them is an optimized rejection sampling in order to do edge sampling efficiently.
 
 They decomposed the transition probability in a static and dynamic componenent. For the dynamic sampling they compare it to throwing a dart in a target, with bars of width of the static component and height of the dynamic one. The static componenent is dealt with alias sampling. The dynamic is using rejection sampling and clever optimizations with lower bound bypass and clever folding.
 

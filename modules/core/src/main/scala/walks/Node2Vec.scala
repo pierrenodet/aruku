@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Pierre Nodet
+ * Copyright 2019 Pierre Nodet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,48 +17,50 @@
 package aruku.walks
 
 import aruku._
-import org.apache.spark.graphx.{ Edge, VertexId }
+import org.apache.spark.graphx.Edge
+import org.apache.spark.graphx.VertexId
 
-sealed case class Node2Vec private[aruku] (
-  previous: VertexId
-)
+final case class Node2Vec private[aruku] (
+  val previous: VertexId
+) extends AnyVal
 
 object Node2Vec {
 
   def config(numWalkers: Long, numEpochs: Int = 1, parallelism: Int = 1) =
-    WalkerConfig.dynamic(
+    WalkerConfig.updating(
       numWalkers,
       numEpochs,
       parallelism,
       (current: VertexId) => Node2Vec(current),
-      (walker: Walker[Node2Vec], current: VertexId, next: Edge[Double]) => Node2Vec(current),
+      (_: Walker[Node2Vec], current: VertexId, _: Edge[Double]) => Node2Vec(current),
       AtRandom(1.0)
     )
 
   def transition(p: Double, q: Double, walkLength: Long) =
     Transition.secondOrder(
       (walker: Walker[Node2Vec], _: VertexId) => if (walker.step < walkLength) 1.0 else 0.0,
-      (vid: VertexId, edge: Edge[Double]) => edge.attr,
-      (walker: Walker[Node2Vec], _: VertexId, edges: Array[Edge[Double]]) => Some(edges.map(_.dstId)),
+      (_: VertexId, edge: Edge[Double]) => edge.attr,
+      (walker: Walker[Node2Vec], _: VertexId, edges: Array[Edge[Double]]) => Some(edges),
       (
         walker: Walker[Node2Vec],
         current: VertexId,
         next: Edge[Double],
-        msg: Option[Array[VertexId]]
+        msg: Option[Array[Edge[Double]]]
       ) =>
         msg match {
           case Some(previousNeighbors) =>
-            if (previousNeighbors.contains(next)) {
-              1
-            } else if (next == walker.data.previous) {
-              1 / p
+            val dst = next.dstId
+            if (dst == walker.data.previous) {
+              1.0 / p
+            } else if (previousNeighbors.exists(_.dstId == dst)) {
+              1.0
             } else {
-              1 / q
+              1.0 / q
             }
-          case None => 1.0
+          case None                    => 1.0
         },
-      (_: VertexId, _: Array[Edge[Double]]) => math.max(1 / p, math.max(1, 1 / q)),
-      (_: VertexId, _: Array[Edge[Double]]) => math.min(1 / p, math.min(1, 1 / q))
+      (_: VertexId, _: Array[Edge[Double]]) => math.max(1.0 / p, math.max(1.0, 1.0 / q)),
+      (_: VertexId, _: Array[Edge[Double]]) => math.min(1.0 / p, math.min(1.0, 1.0 / q))
     )
 
 }
