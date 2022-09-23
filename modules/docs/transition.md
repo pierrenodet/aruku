@@ -83,11 +83,11 @@ object DynamicWalk {
  def transition(p: Double, q: Double, walkLength: Long) =
 
     Transition.secondOrder(
-      (walker: Walker[Node2Vec], _: VertexId) => if (walker.step < walkLength) 1.0 else 0.0,
+      (walker: Walker[DynamicWalk], _: VertexId) => if (walker.step < walkLength) 1.0 else 0.0,
       (_: VertexId, edge: Edge[Double]) => edge.attr,
-      (walker: Walker[Node2Vec], _: VertexId, edges: Array[Edge[Double]]) => Some(edges),
+      (walker: Walker[DynamicWalk], _: VertexId, edges: Array[Edge[Double]]) => Some(edges),
       (
-        walker: Walker[Node2Vec],
+        walker: Walker[DynamicWalk],
         current: VertexId,
         next: Edge[Double],
         msg: Option[Array[Edge[Double]]]
