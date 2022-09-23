@@ -79,7 +79,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
     val parallelism = 2
     val graph       = Graph(sc.makeRDD(vertices, parallelism), sc.makeRDD(edges)).cache()
 
-    val numWalkers = 50000
+    val numWalkers = 10000
     val numEpochs  = 1
     val walkLength = 3
 
@@ -120,7 +120,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
       val sumProba = proba.values.sum
       val distrib  = proba.map { case (k, v) => (k, v / sumProba) }
 
-      val precision = 1e-2
+      val precision = 5e-2
       assert(estimate(previousVertice) === distrib(previousVertice) +- precision)
       assert(estimate.getOrElse(starVertice, 0.0) === distrib(starVertice) +- precision)
       assert(estimate(prevNeighborVertice) === distrib(prevNeighborVertice) +- precision)
