@@ -26,8 +26,19 @@ ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches +=
   RefPredicate.StartsWith(Ref.Tag("v"))
 ThisBuild / githubWorkflowPublish        := Seq(
-  WorkflowStep.Sbt(List("ci-release")),
-  WorkflowStep.Sbt(List("docs/docusaurusPublishGhpages"))
+  WorkflowStep.Sbt(
+    List("ci-release"),
+    env = Map(
+      "PGP_PASSPHRASE"    -> "${{ secrets.PGP_PASSPHRASE }}",
+      "PGP_SECRET"        -> "${{ secrets.PGP_SECRET }}",
+      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
+    )
+  ),
+  WorkflowStep.Sbt(
+    List("docs/docusaurusPublishGhpages"),
+    env = Map("GIT_DEPLOY_KEY" -> "${{ secrets.GIT_DEPLOY_KEY }}")
+  )
 )
 ThisBuild / githubWorkflowBuild          := Seq(WorkflowStep.Sbt(List("coverage", "test", "coverageReport")))
 ThisBuild / githubWorkflowBuildPostamble := Seq(WorkflowStep.Run(List("bash <(curl -s https://codecov.io/bash)")))
