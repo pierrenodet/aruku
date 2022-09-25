@@ -16,11 +16,13 @@
 
 package aruku
 
+import aruku.implicits._
 import aruku.partition._
 import aruku.sampling._
 import aruku.util._
 import org.apache.spark.HashPartitioner
 import org.apache.spark.Partitioner
+import org.apache.spark.SparkException
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
@@ -52,13 +54,14 @@ object RandomWalk {
       .mapPartitionsWithIndex(
         { (_, iter) =>
           val static = transitionBC.value.static
-          LocalGraphPartition.data ++= iter.map { case (vid, edges) =>
-            val n             = edges.size
-            val probabilities = Array.ofDim[Double](n)
-            var i             = 0
-            while (i < n) { probabilities(i) = static(vid, edges(i)); i += 1 }
-            val aliases       = AliasMethod.fromRawProbabilities(probabilities)
-            (vid, LocalData(edges, aliases))
+          LocalGraphPartition.data ++= iter.collect {
+            case (vid, edges) if !edges.isEmpty =>
+              val n             = edges.size
+              val probabilities = Array.ofDim[Double](n)
+              var i             = 0
+              while (i < n) { probabilities(i) = static(vid, edges(i)); i += 1 }
+              val aliases       = AliasMethod.fromRawProbabilities(probabilities)
+              (vid, LocalData(edges, aliases))
           }
           Iterator.empty
         },
@@ -211,14 +214,14 @@ object RandomWalk {
 
     val partitioner = graph.vertices.partitioner.getOrElse(new HashPartitioner(graph.vertices.partitions.size))
 
-    val flatten = graph.collectEdges(edgeDirection)
+    val flatten: VertexRDD[Array[Edge[Double]]] = graph.collectNeighborEdges(edgeDirection)
 
     val transitionBC   = sc.broadcast(transition)
     val walkerConfigBC = sc.broadcast(walkerConfig)
 
     implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(walkerConfig.parallelism))
 
-    var walkers: Array[RDD[(Long, WalkerState[T, M])]] = initWalkers(flatten.keys, walkerConfigBC, partitioner)
+    var walkers: Array[RDD[(VertexId, WalkerState[T, M])]] = initWalkers(flatten.keys, walkerConfigBC, partitioner)
 
     val routingTable = initRoutingTable(flatten, transitionBC, partitioner).cache()
     routingTable.count()

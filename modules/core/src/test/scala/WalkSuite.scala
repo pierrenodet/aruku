@@ -98,9 +98,16 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
       )
 
       assert(paths.count() == numWalkers)
-      assert(paths.map { case (_, path) =>
-        (path.head, 1)
-      }.countByKey() == Map((previousVertice -> numWalkers / 2), (starVertice -> numWalkers / 2)))
+      assert(
+        paths.map { case (_, path) =>
+          (path.head, 1)
+        }.countByKey() == Map(
+          (previousVertice     -> numWalkers / 4),
+          (starVertice         -> numWalkers / 4),
+          (prevNeighborVertice -> numWalkers / 4),
+          (aloneVertice        -> numWalkers / 4)
+        )
+      )
 
       val startsWithPrevVerticeAndGoToStar = paths.filter { case (_, p) =>
         p(0) == previousVertice && p(1) == starVertice
@@ -182,6 +189,7 @@ class WalkSuite extends AnyFunSuite with BeforeAndAfterAll with ScalaCheckProper
     assert(
       paths
         .map(_._2)
+        .filter(_.size >= 2)
         .collect()
         .forall(path => path.toList.sliding(2).collect { case head :: next => head != next.head }.forall(identity))
     )
