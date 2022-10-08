@@ -37,22 +37,22 @@ object AliasMethod {
 
     val rawprobs = rawProbabilities.clone()
 
+    val n = rawprobs.size
+
     val sum = rawprobs.sum
-    for (i <- rawprobs.indices)
-      rawprobs(i) /= sum
+    var i   = 0
+    while (i < n) { rawprobs(i) /= sum; i += 1 }
 
     val probs   = new Array[Double](rawprobs.size)
     val aliases = new Array[Int](rawprobs.size)
 
     val small, large = new Queue[Int]
 
-    val n = rawprobs.size;
+    i = 0
+    while (i < n) { rawprobs(i) *= n; i += 1 }
 
-    for (i <- rawprobs.indices)
-      rawprobs(i) *= n
-
-    for (i <- rawprobs.indices)
-      if (rawprobs(i) >= 1) large += i else small += i
+    i = 0
+    while (i < n) { if (rawprobs(i) >= 1) large += i else small += i; i += 1 }
 
     while (small.size != 0 && large.size != 0) {
       val less = small.dequeue()

@@ -3,7 +3,7 @@ id: walks
 title: "Provided Walks"
 ---
 
-As of now three random walks are provided with aruku
+As of now, three random walks are provided with aruku
 
 ## Personalized Page Rank
 

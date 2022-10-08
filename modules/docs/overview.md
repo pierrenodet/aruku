@@ -3,11 +3,11 @@ id: overview
 title: Overview
 ---
 
-## What's aruku ?
+## What's aruku?
 
-aruku is a random walk engine for Apache Spark. It's helps you program and model you random walk easily and let's a distributed, fault tolerant and optimized engine take care of running it. 
+aruku is a random walk engine for Apache Spark. It helps you program and model your random walk easily and lets a distributed, fault-tolerant, and optimized engine take care of running it. 
 
-## How do I use it ?
+## How do I use it?
 
 To run node2vec on a graph from Apache Spark Graphx :
 
@@ -15,6 +15,8 @@ To run node2vec on a graph from Apache Spark Graphx :
 import aruku._
 import aruku.implicits._
 import aruku.walks._
+import org.apache.spark.graphx._
+import org.apache.spark.graphx.utils._
 
 val graph: Graph[Long, Int] = GraphGenerators
     .logNormalGraph(sc, numVertices = 150000)
@@ -28,7 +30,7 @@ graph.randomWalk(edge => edge.attr.toDouble)
     (Node2Vec.config(150000), Node2Vec.transition(0.5, 2, 80))
 ```
 
-## Ready to install ?
+## Ready to install?
 
 ```scala
 libraryDependencies += "com.github.pierrenodet" %% "aruku-core" % "@VERSION@"

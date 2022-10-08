@@ -44,7 +44,7 @@ ThisBuild / githubWorkflowBuild          := Seq(WorkflowStep.Sbt(List("coverage"
 ThisBuild / githubWorkflowBuildPostamble := Seq(WorkflowStep.Run(List("bash <(curl -s https://codecov.io/bash)")))
 ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("public")
 ThisBuild / resolvers ++= Resolver.sonatypeOssRepos("snapshots")
-ThisBuild / versionScheme := Some("semver-spec")
+ThisBuild / versionScheme                := Some("semver-spec")
 
 lazy val commonSettings = Seq(
   Compile / doc / scalacOptions --= Seq("-Xfatal-warnings"),
@@ -105,6 +105,12 @@ lazy val docs = project
     docusaurusCreateSite                       := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
     docusaurusPublishGhpages                   := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value,
     githubWorkflowArtifactUpload               := false
+  )
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.apache.spark" %% "spark-core"   % sparkVersion % Provided,
+      "org.apache.spark" %% "spark-graphx" % sparkVersion % Provided
+    )
   )
 
 lazy val benchmarks = project

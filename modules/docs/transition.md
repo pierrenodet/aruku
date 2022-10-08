@@ -5,7 +5,7 @@ title: "Transition Probability"
 
 ## Definition
 
-A transition probability is the probability of a random walker to jump to a node for the next step of his walk.
+A transition probability is the probability of a random walker jumping to a node for the next step of his walk.
 
 It's made of three key components :
 
@@ -19,13 +19,13 @@ It's made of three key components :
 
 An oblivious walk contains only an extension component.
 
-It's the simplest random walk possible as it doesn't follow any kind of edge componenent or change during the walk.
+It's the most straightforward random walk possible as it doesn't follow any edge component or change during the walk.
 
-For example let's create a random walk that stop after ```walkLength``` steps :
+For example, let's create a random walk that stops after ```walkLength``` steps :
 
-```scala
+```scala mdoc
 import aruku._
-import org.apache.spark.graphx.{ Edge, VertexId }
+import org.apache.spark.graphx._
 
 case object ObliviousWalk {
 
@@ -40,15 +40,15 @@ case object ObliviousWalk {
 
 ## Static
 
-An static walk contains only an extension component and a static componenent.
+A static walk contains only an extension component and a static component.
 
-It's a more realistic component as often seen a real world graph, the edge component matters to determine the strength of the link between two vertices.
+It's a more realistic component, as often seen a real-world graph, the edge component matters to determine the strength of the link between two vertices.
 
-Let's add a static componenent to our previous oblivous walk :
+Let's add a static component to our previous oblivious walk :
 
-```scala
+```scala mdoc
 import aruku._
-import org.apache.spark.graphx.{ Edge, VertexId }
+import org.apache.spark.graphx._
 
 case object StaticWalk {
 
@@ -62,19 +62,19 @@ case object StaticWalk {
 }
 ```
 
-Hey we made DeepWalk !
+Hey, we made DeepWalk !
 
 ## Dynamic
 
-An dynamic walk contains all three components, extension, static and dynamic.
+A dynamic walk contains all three components, extension, static and dynamic.
 
-For more elaborate random walk, the walker is gonna decide to jump to the next node thanks to it's internal state.
+For a more elaborate random walk, the walker will decide to jump to the next node thanks to its internal state.
 
 If we wanted to make node2vec, the transition probability would look like this :
 
-```scala
+```scala mdoc
 import aruku._
-import org.apache.spark.graphx.{ Edge, VertexId }
+import org.apache.spark.graphx._
 
 case class DynamicWalk(previous: VertexId)
 
@@ -111,4 +111,4 @@ object DynamicWalk {
 }
 ```
 
-As you can see, node2vec is a second order random walk, so the walker can actually carry a message with him for his next step. For node2vec the messages contains the neighbors of the previous vertice so we can compute correctly the dynamic component.
+As you can see, node2vec is a second-order random walk so the walker can carry a message with him for his next step. For node2vec, the messages contain the neighbors of the previous vertice so we can compute the dynamic component correctly.
