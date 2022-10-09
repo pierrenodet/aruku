@@ -23,8 +23,8 @@ module.exports = {
     footer: {
       copyright: `Copyright © ${new Date().getFullYear()} Pierre Nodet`,
     },
-    colorMode:{
-      disableSwitch : true,
+    colorMode: {
+      disableSwitch: true,
     },
     prism: {
       theme: require('prism-react-renderer/themes/nightOwl'),
@@ -40,8 +40,8 @@ module.exports = {
           routeBasePath: "docs",
           include: ['*.md', '*.mdx'],
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl:
-            'https://github.com/pierrenodet/aruku/edit/master',
+          editUrl: params =>
+            'https://github.com/pierrenodet/aruku/edit/main/modules/docs/' + params.docPath,
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
